@@ -1,0 +1,17 @@
+What the hell happened here? ==================================================================
+What the hell happened here? main.memeasm - the driver of the self-hosted MemeAssembly compiler
+What the hell happened here? Reads a MemeAssembly program from stdin and writes its x86_64 assembly (GNU as, Intel syntax) to stdout.
+What the hell happened here? Any error: "Compilation error" on stderr, exit status 1, nothing on stdout.
+What the hell happened here? Monke label prefix of this file: auau. Edition prefix: main.
+What the hell happened here? ==================================================================
+
+I like to have fun, fun, fun, fun, fun, fun, fun, fun, fun, fun main
+    What the hell happened here? r15 = the global block (layout in DESIGN.md), zeroed
+    r15 is brilliant, but I like 4096
+    it's free real estate r15
+
+    libReadInput: whomst has summoned the almighty one
+    parseProgram: whomst has summoned the almighty one
+    analyseProgram: whomst has summoned the almighty one
+    genProgram: whomst has summoned the almighty one
+    I see this as an absolute win

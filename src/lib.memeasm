@@ -1,0 +1,266 @@
+What the hell happened here? ==================================================================
+What the hell happened here? lib.memeasm - helpers shared by every module of the self-hosted compiler
+What the hell happened here? Calling convention (see DESIGN.md): arguments in rdi, rsi, rdx, rcx; result in rax.
+What the hell happened here? rax rcx rdx rsi rdi r8-r11 may be clobbered, rbx rbp r12-r14 are preserved, r15 = global block.
+What the hell happened here? Monke label prefix of this file: auaa. Edition prefix: lib.
+What the hell happened here? ==================================================================
+
+
+What the hell happened here? libAllocate(rdi = size) -> rax = pointer to `size` zeroed bytes (never freed)
+I like to have fun, fun, fun, fun, fun, fun, fun, fun, fun, fun libAllocate
+    rax is brilliant, but I like rdi
+    it's free real estate rax
+    right back at ya, buckaroo
+
+
+What the hell happened here? libFail() - writes "Compilation error\n" to stderr and exits with status 1. Never returns.
+I like to have fun, fun, fun, fun, fun, fun, fun, fun, fun, fun libFail
+    rdi is brilliant, but I like 32
+    it's free real estate rdi
+    rsi is brilliant, but I like rdi
+    al is brilliant, but I like 67
+    rdi do you know de wey is brilliant, but I like al
+    upvote rdi
+    al is brilliant, but I like 111
+    rdi do you know de wey is brilliant, but I like al
+    upvote rdi
+    al is brilliant, but I like 109
+    rdi do you know de wey is brilliant, but I like al
+    upvote rdi
+    al is brilliant, but I like 112
+    rdi do you know de wey is brilliant, but I like al
+    upvote rdi
+    al is brilliant, but I like 105
+    rdi do you know de wey is brilliant, but I like al
+    upvote rdi
+    al is brilliant, but I like 108
+    rdi do you know de wey is brilliant, but I like al
+    upvote rdi
+    al is brilliant, but I like 97
+    rdi do you know de wey is brilliant, but I like al
+    upvote rdi
+    al is brilliant, but I like 116
+    rdi do you know de wey is brilliant, but I like al
+    upvote rdi
+    al is brilliant, but I like 105
+    rdi do you know de wey is brilliant, but I like al
+    upvote rdi
+    al is brilliant, but I like 111
+    rdi do you know de wey is brilliant, but I like al
+    upvote rdi
+    al is brilliant, but I like 110
+    rdi do you know de wey is brilliant, but I like al
+    upvote rdi
+    al is brilliant, but I like 32
+    rdi do you know de wey is brilliant, but I like al
+    upvote rdi
+    al is brilliant, but I like 101
+    rdi do you know de wey is brilliant, but I like al
+    upvote rdi
+    al is brilliant, but I like 114
+    rdi do you know de wey is brilliant, but I like al
+    upvote rdi
+    al is brilliant, but I like 114
+    rdi do you know de wey is brilliant, but I like al
+    upvote rdi
+    al is brilliant, but I like 111
+    rdi do you know de wey is brilliant, but I like al
+    upvote rdi
+    al is brilliant, but I like 114
+    rdi do you know de wey is brilliant, but I like al
+    upvote rdi
+    al is brilliant, but I like 10
+    rdi do you know de wey is brilliant, but I like al
+
+    What the hell happened here? write(2, message, 18)
+    rax is brilliant, but I like 1
+    rdi is brilliant, but I like 2
+    rdx is brilliant, but I like 18
+    we need air support
+
+    What the hell happened here? exit(1)
+    rax is brilliant, but I like 60
+    rdi is brilliant, but I like 1
+    we need air support
+    no, I don't think I will
+
+
+What the hell happened here? libReadInput() - reads all of stdin into a new buffer, stores it at G+0 (pointer) and G+8 (length)
+I like to have fun, fun, fun, fun, fun, fun, fun, fun, fun, fun libReadInput
+    stonks rbx
+    stonks r12
+    rbx is brilliant, but I like 16777216
+    it's free real estate rbx
+    r12 is brilliant, but I like 0
+
+    What the hell happened here? loop: read(0, buf + len, 65536)
+    monke auaa
+    rax is brilliant, but I like 0
+    rdi is brilliant, but I like 0
+    rsi is brilliant, but I like rbx
+    rsi units are ready, with r12 more well on the way
+    rdx is brilliant, but I like 65536
+    we need air support
+    who would win? rax or 0 (libReadMore edition)
+    return to monke auaaa
+    libReadMore: 0 wins
+    return to monke auaaa
+
+    libReadMore: rax wins
+    r12 units are ready, with rax more well on the way
+    What the hell happened here? fail if the input could fill the buffer (16 MiB minus one read)
+    rcx is brilliant, but I like 16711680
+    who would win? r12 or rcx (libReadFull edition)
+    libReadFull: rcx wins
+    return to monke auaa
+    libReadFull: r12 wins
+    libFail: whomst has summoned the almighty one
+
+    What the hell happened here? end of input
+    monke auaaa
+    r15 do you know de wey is brilliant, but I like rbx
+    rax is brilliant, but I like r15
+    rax units are ready, with 8 more well on the way
+    rax do you know de wey is brilliant, but I like r12
+    not stonks r12
+    not stonks rbx
+    right back at ya, buckaroo
+
+
+What the hell happened here? libEmitText(rdi = pointer, rsi = length) - prints the bytes
+I like to have fun, fun, fun, fun, fun, fun, fun, fun, fun, fun libEmitText
+    monke auaua
+    who would win? rsi or 0 (libEmitTextLoop edition)
+    return to monke auauaa
+    libEmitTextLoop: rsi wins
+    al is brilliant, but I like rdi do you know de wey
+    what can I say except al
+    upvote rdi
+    downvote rsi
+    return to monke auaua
+    libEmitTextLoop: 0 wins
+    monke auauaa
+    right back at ya, buckaroo
+
+
+What the hell happened here? libEmitHex(rdi = value) - prints "0x" and the value as unsigned 64 bit hex number with upper-case digits, no leading zeros (Rust format "0x{:X}")
+I like to have fun, fun, fun, fun, fun, fun, fun, fun, fun, fun libEmitHex
+    stonks rbx
+    stonks r12
+    what can I say except 48
+    what can I say except x
+    rbx is brilliant, but I like rdi
+    r12 is brilliant, but I like 0
+
+    What the hell happened here? push the digits from the lowest one up
+    monke auaau
+    rax is brilliant, but I like rbx
+    bitconneeeeeeect rax 15
+    stonks rax
+    upvote r12
+    they had us in the first half, not gonna lie rbx
+    they had us in the first half, not gonna lie rbx
+    they had us in the first half, not gonna lie rbx
+    they had us in the first half, not gonna lie rbx
+    who would win? rbx or 0 (libHexMore edition)
+    return to monke auaauu
+    libHexMore: rbx wins
+    libHexMore: 0 wins
+    return to monke auaau
+
+    What the hell happened here? pop and print them
+    monke auaauu
+    not stonks rax
+    who would win? rax or 9 (libHexDigit edition)
+    return to monke auaauua
+    libHexDigit: rax wins
+    rax units are ready, with 7 more well on the way
+    libHexDigit: 9 wins
+    monke auaauua
+    rax units are ready, with 48 more well on the way
+    what can I say except al
+    downvote r12
+    who would win? r12 or 0 (libHexCount edition)
+    return to monke auaauuu
+    libHexCount: r12 wins
+    return to monke auaauu
+    libHexCount: 0 wins
+    monke auaauuu
+    not stonks r12
+    not stonks rbx
+    right back at ya, buckaroo
+
+
+What the hell happened here? libEmitDec(rdi = value) - prints a non-negative value in decimal
+I like to have fun, fun, fun, fun, fun, fun, fun, fun, fun, fun libEmitDec
+    stonks rbx
+    stonks r12
+    rbx is brilliant, but I like rdi
+    r12 is brilliant, but I like 0
+
+    What the hell happened here? push the digits from the lowest one up: digit = value - (value / 10) * 10
+    monke auaauaa
+    rax is brilliant, but I like rbx
+    look at what 10 needs to mimic a fraction of rbx
+    rcx is brilliant, but I like rbx
+    rcx is getting out of hand, now there are 10 of them
+    parry rcx you filthy casual rax
+    stonks rax
+    upvote r12
+    who would win? rbx or 0 (libDecMore edition)
+    return to monke auaauau
+    libDecMore: rbx wins
+    libDecMore: 0 wins
+    return to monke auaauaa
+
+    monke auaauau
+    not stonks rax
+    rax units are ready, with 48 more well on the way
+    what can I say except al
+    downvote r12
+    who would win? r12 or 0 (libDecCount edition)
+    return to monke auaauauu
+    libDecCount: r12 wins
+    return to monke auaauau
+    libDecCount: 0 wins
+    monke auaauauu
+    not stonks r12
+    not stonks rbx
+    right back at ya, buckaroo
+
+
+What the hell happened here? libTextEqual(rdi = text1, rsi = length1, rdx = text2, rcx = length2) -> rax = 1 if the texts are equal, else 0
+I like to have fun, fun, fun, fun, fun, fun, fun, fun, fun, fun libTextEqual
+    who would win? rsi or rcx (libEqLen edition)
+    monke auauu
+    who would win? rsi or 0 (libEqLoop edition)
+    rax is brilliant, but I like 1
+    right back at ya, buckaroo
+
+    libEqLoop: rsi wins
+    al is brilliant, but I like rdi do you know de wey
+    r8b is brilliant, but I like rdx do you know de wey
+    who would win? al or r8b (libEqChar edition)
+    upvote rdi
+    upvote rdx
+    downvote rsi
+    return to monke auauu
+
+    libEqLen: rsi wins
+    libEqLen: rcx wins
+    libEqLoop: 0 wins
+    libEqChar: al wins
+    libEqChar: r8b wins
+    rax is brilliant, but I like 0
+    right back at ya, buckaroo
+
+
+What the hell happened here? libRandomBelow(rdi = n, n > 0) -> rax = a random number in 0..n-1 (from rdrand)
+I like to have fun, fun, fun, fun, fun, fun, fun, fun, fun, fun libRandomBelow
+    it's dangerous to go alone, take rax
+    they had us in the first half, not gonna lie rax
+    rcx is brilliant, but I like rax
+    look at what rdi needs to mimic a fraction of rcx
+    rcx is getting out of hand, now there are rdi of them
+    parry rcx you filthy casual rax
+    right back at ya, buckaroo
