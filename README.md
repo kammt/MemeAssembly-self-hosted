@@ -70,7 +70,7 @@ and `confused stonks`, which jumps to a random one. Both are random, which is th
 ## Getting started
 ### Building
 The compiler is a multi-file MemeAssembly project listed in the `Breakfile`. The very first copy has to be built by the
-reference `memeasm` (v1.6, the Rust rewrite). We are not proud of it either.
+reference `memeasm` (v2.0, the Rust rewrite). We are not proud of it either.
 
 ```sh
 make memeasm-self REF_MEMEASM=/path/to/memeasm   # runs `memeasm -o memeasm-self`, which reads the Breakfile
@@ -124,3 +124,6 @@ Whoever understands it gets nothing, because nobody has managed it yet.
 Same spirit as [MemeAssembly](https://github.com/kammt/MemeAssembly): contributions are welcome, especially ones that make
 it even more cursed. Pull requests must keep `make test` and `make bootstrap` green. The compiler has to be able to read your code,
 which is more than can be said for the reviewers.
+
+## License
+MIT, see [LICENSE](LICENSE). Use it, fork it, ship it to production. Especially that last one; we'd love to hear how it went.
