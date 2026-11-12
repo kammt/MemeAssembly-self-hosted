@@ -1,7 +1,1311 @@
 What the hell happened here? ==================================================================
-What the hell happened here? parser.memeasm - STUB, to be replaced (see DESIGN.md)
+What the hell happened here? parser.memeasm - splits the input into lines and matches every line against the command patterns
+What the hell happened here? A port of file_parser.rs (lines_of_interest, line_text, next_token, match_command, parse_line)
+What the hell happened here? and of the error checks of function_parser.rs of the reference compiler.
 What the hell happened here? Monke label prefix of this file: uaa. Edition / function prefix: parse.
+What the hell happened here?
+What the hell happened here? Result (see DESIGN.md): one 256 byte command record per line of interest at CMDS (G+16),
+What the hell happened here? their number at CMD_COUNT (G+24). Each record gets OPCODE, LINE, POINTER (-1 = none),
+What the hell happened here? TRANSLATE = 1 and the TEXT/LEN of each used parameter (pointers into the input buffer).
+What the hell happened here? Any error (invalid line, two pointers, no commands, bad function structure) calls libFail.
+What the hell happened here?
+What the hell happened here? Private part of the global block (r15) used by the parser:
+What the hell happened here?   G+512  pointer to the pattern table: the patterns of opcodes 0..46, each followed by a NUL byte
+What the hell happened here?   G+520  pointer to "What the hell happened here?" (28 bytes, a comment starts with it)
+What the hell happened here?   G+528  pointer to "do you know de wey" (18 bytes, the pointer suffix)
+What the hell happened here?   G+536  pointer to "or" (2 bytes)
+What the hell happened here?   G+544  pointer to "draw 25" (7 bytes)
+What the hell happened here?   G+552  pointer to the command record that is being filled
+What the hell happened here?
+What the hell happened here? Monke labels are named uaa + a binary number (u = 1, a = 0); a comment says what each one is.
 What the hell happened here? ==================================================================
 
+
+What the hell happened here? ------------------------------------------------------------------
+What the hell happened here? parseProgram() - parses INPUT/INPUT_LEN into the command records, then checks the functions
+What the hell happened here? ------------------------------------------------------------------
 I like to have fun, fun, fun, fun, fun, fun, fun, fun, fun, fun parseProgram
+    stonks rbx
+    stonks rbp
+    stonks r12
+    stonks r13
+    stonks r14
+    parseBuildTable: whomst has summoned the almighty one
+
+    What the hell happened here? room for INPUT_LEN / 2 + 2 records of 256 bytes, the pointer goes to CMDS (G+16)
+    rax is brilliant, but I like r15
+    rax units are ready, with 8 more well on the way
+    rdi is brilliant, but I like rax do you know de wey
+    they had us in the first half, not gonna lie rdi
+    rdi units are ready, with 2 more well on the way
+    rdi is getting out of hand, now there are 256 of them
+    libAllocate: whomst has summoned the almighty one
+    rcx is brilliant, but I like r15
+    rcx units are ready, with 16 more well on the way
+    rcx do you know de wey is brilliant, but I like rax
+
+    What the hell happened here? rbx = start of the current piece, r12 = end of the input, r13 = line number,
+    What the hell happened here? rbp = number of records, r14 = the next free record
+    r14 is brilliant, but I like rax
+    rbx is brilliant, but I like r15 do you know de wey
+    rax is brilliant, but I like r15
+    rax units are ready, with 8 more well on the way
+    r12 is brilliant, but I like rax do you know de wey
+    r12 units are ready, with rbx more well on the way
+    sneak 100 r13
+    sneak 100 rbp
+
+    What the hell happened here? one piece per iteration: everything up to and including the next LF (data.split_inclusive)
+    What the hell happened here? uaau: next piece
+    monke uaau
+    who would win? rbx or r12 (parseMorePieces edition)
+    return to monke uaaua
+    parseMorePieces: rbx wins
+    parseMorePieces: r12 wins
+    upvote r13
+
+    What the hell happened here? uaauu: rdi walks to the end of the piece
+    rdi is brilliant, but I like rbx
+    monke uaauu
+    who would win? rdi or r12 (parseScanEnd edition)
+    return to monke uaauaa
+    parseScanEnd: rdi wins
+    parseScanEnd: r12 wins
+    sneak 100 rax
+    al is brilliant, but I like rdi do you know de wey
+    upvote rdi
+    who would win? rax or 10 (parseScanLf edition)
+    return to monke uaauau
+    parseScanLf: rax wins
+    parseScanLf: 10 wins
+    return to monke uaauu
+
+    What the hell happened here? uaauau: the piece ends with LF (rdi = after it); the line is without the LF and one CR before it
+    monke uaauau
+    stonks rdi
+    rsi is brilliant, but I like rdi
+    parry rbx you filthy casual rsi
+    downvote rsi
+    who would win? rsi or 0 (parseTermEmpty edition)
+    return to monke uaauua
+    parseTermEmpty: 0 wins
+    parseTermEmpty: rsi wins
+    rax is brilliant, but I like rbx
+    rax units are ready, with rsi more well on the way
+    downvote rax
+    sneak 100 rcx
+    cl is brilliant, but I like rax do you know de wey
+    who would win? rcx or 13 (parseTermCr edition)
+    downvote rsi
+    parseTermCr: rcx wins
+    parseTermCr: 13 wins
+    return to monke uaauua
+
+    What the hell happened here? uaauaa: an unterminated last piece. The deliberate quirk of the reference: a CR before
+    What the hell happened here? its last byte ends the line (the CR and the last byte are dropped)
+    monke uaauaa
+    stonks rdi
+    rsi is brilliant, but I like rdi
+    parry rbx you filthy casual rsi
+    who would win? rsi or 2 (parseUntermLen edition)
+    parseUntermLen: rsi wins
+    rax is brilliant, but I like rbx
+    rax units are ready, with rsi more well on the way
+    parry 2 you filthy casual rax
+    sneak 100 rcx
+    cl is brilliant, but I like rax do you know de wey
+    who would win? rcx or 13 (parseUntermCr edition)
+    parry 2 you filthy casual rsi
+    parseUntermCr: rcx wins
+    parseUntermCr: 13 wins
+    parseUntermLen: 2 wins
+
+    What the hell happened here? uaauua: the line is rbx/rsi, the start of the next piece is on the stack
+    monke uaauua
+    rdi is brilliant, but I like rbx
+    rdx is brilliant, but I like r13
+    rcx is brilliant, but I like r14
+    parseLine: whomst has summoned the almighty one
+    not stonks rbx
+    who would win? rax or 0 (parseLineCounted edition)
+    return to monke uaau
+    parseLineCounted: 0 wins
+    parseLineCounted: rax wins
+    upvote rbp
+    r14 units are ready, with 256 more well on the way
+    return to monke uaau
+
+    What the hell happened here? uaaua: all lines parsed. CMD_COUNT (G+24) = rbp, which must not be 0
+    monke uaaua
+    rax is brilliant, but I like r15
+    rax units are ready, with 24 more well on the way
+    rax do you know de wey is brilliant, but I like rbp
+    who would win? rbp or 0 (parseAnyLines edition)
+    libFail: whomst has summoned the almighty one
+    parseAnyLines: 0 wins
+    parseAnyLines: rbp wins
+    parseCheckFunctions: whomst has summoned the almighty one
+    not stonks r14
+    not stonks r13
+    not stonks r12
+    not stonks rbp
+    not stonks rbx
+    right back at ya, buckaroo
+
+
+What the hell happened here? ------------------------------------------------------------------
+What the hell happened here? parseLine(rdi = line, rsi = length without the line end, rdx = line number, rcx = record)
+What the hell happened here? -> rax = 1 if it is a line of interest (the record is filled), 0 if it is blank or a comment.
+What the hell happened here? An invalid line calls libFail.
+What the hell happened here? ------------------------------------------------------------------
+I like to have fun, fun, fun, fun, fun, fun, fun, fun, fun, fun parseLine
+    stonks rbx
+    stonks rbp
+    stonks r12
+    stonks r13
+    stonks r14
+    rbx is brilliant, but I like rdi
+    rbp is brilliant, but I like rsi
+    r13 is brilliant, but I like rcx
+
+    What the hell happened here? LINE (record + 8) = line number, TRANSLATE (record + 24) = 1
+    rax is brilliant, but I like r13
+    rax units are ready, with 8 more well on the way
+    rax do you know de wey is brilliant, but I like rdx
+    rax units are ready, with 16 more well on the way
+    rcx is brilliant, but I like 1
+    rax do you know de wey is brilliant, but I like rcx
+
+    What the hell happened here? r12 = end of the line, r14 skips the spaces and tabs at its start
+    r12 is brilliant, but I like rbx
+    r12 units are ready, with rbp more well on the way
+    r14 is brilliant, but I like rbx
+    What the hell happened here? uaauuu: skip a blank
+    monke uaauuu
+    who would win? r14 or r12 (parseBlankEnd edition)
+    return to monke uaauaaa
+    parseBlankEnd: r14 wins
+    parseBlankEnd: r12 wins
+    sneak 100 rdi
+    dil is brilliant, but I like r14 do you know de wey
+    rsi is brilliant, but I like 1
+    parseIsDelim: whomst has summoned the almighty one
+    who would win? rax or 0 (parseBlankChar edition)
+    return to monke uaauaau
+    parseBlankChar: 0 wins
+    parseBlankChar: rax wins
+    upvote r14
+    return to monke uaauuu
+
+    What the hell happened here? uaauaau: r14 = the first non-blank byte. A comment is no line of interest
+    monke uaauaau
+    rdi is brilliant, but I like r14
+    rsi is brilliant, but I like r12
+    parry r14 you filthy casual rsi
+    rax is brilliant, but I like r15
+    rax units are ready, with 520 more well on the way
+    rdx is brilliant, but I like rax do you know de wey
+    rcx is brilliant, but I like 28
+    parseStartsWith: whomst has summoned the almighty one
+    who would win? rax or 0 (parseIsComment edition)
+    return to monke uaauaua
+    parseIsComment: 0 wins
+    parseIsComment: rax wins
+    return to monke uaauaaa
+
+    What the hell happened here? uaauaua / uaauauu: line_text: the line ends at its first NUL byte (r12 = new end)
+    monke uaauaua
+    r14 is brilliant, but I like rbx
+    monke uaauauu
+    who would win? r14 or r12 (parseNulEnd edition)
+    return to monke uaauuaa
+    parseNulEnd: r14 wins
+    parseNulEnd: r12 wins
+    sneak 100 rax
+    al is brilliant, but I like r14 do you know de wey
+    who would win? rax or 0 (parseNulChar edition)
+    r12 is brilliant, but I like r14
+    return to monke uaauuaa
+    parseNulChar: 0 wins
+    parseNulChar: rax wins
+    upvote r14
+    return to monke uaauauu
+
+    What the hell happened here? uaauuaa: drop the spaces and tabs at the end
+    monke uaauuaa
+    who would win? r12 or rbx (parseTrimEnd edition)
+    return to monke uaauuau
+    parseTrimEnd: rbx wins
+    parseTrimEnd: r12 wins
+    rax is brilliant, but I like r12
+    downvote rax
+    sneak 100 rdi
+    dil is brilliant, but I like rax do you know de wey
+    rsi is brilliant, but I like 1
+    parseIsDelim: whomst has summoned the almighty one
+    who would win? rax or 0 (parseTrimChar edition)
+    return to monke uaauuau
+    parseTrimChar: 0 wins
+    parseTrimChar: rax wins
+    downvote r12
+    return to monke uaauuaa
+
+    What the hell happened here? uaauuau: the line text is rbx/rbp. G+552 = the record, r12 = pattern of opcode r14
+    monke uaauuau
+    rbp is brilliant, but I like r12
+    parry rbx you filthy casual rbp
+    rax is brilliant, but I like r15
+    rax units are ready, with 552 more well on the way
+    rax do you know de wey is brilliant, but I like r13
+    rax is brilliant, but I like r15
+    rax units are ready, with 512 more well on the way
+    r12 is brilliant, but I like rax do you know de wey
+    sneak 100 r14
+
+    What the hell happened here? uaauuua: match the line against the pattern of opcode r14 (0..46, OrDraw25 is no pattern)
+    monke uaauuua
+    who would win? r14 or 47 (parseTryEnd edition)
+    What the hell happened here? no pattern matches: invalid command
+    libFail: whomst has summoned the almighty one
+    parseTryEnd: r14 wins
+    libFail: whomst has summoned the almighty one
+    parseTryEnd: 47 wins
+    rdi is brilliant, but I like r13
+    parseClearRecord: whomst has summoned the almighty one
+    rdi is brilliant, but I like r12
+    parseStrLen: whomst has summoned the almighty one
+    stonks rax
+    rdi is brilliant, but I like rbx
+    rsi is brilliant, but I like rbp
+    rdx is brilliant, but I like r12
+    rcx is brilliant, but I like rax
+    parseMatch: whomst has summoned the almighty one
+    not stonks rcx
+    r12 units are ready, with rcx more well on the way
+    upvote r12
+    who would win? rax or 1 (parseTryResult edition)
+    return to monke uaauuuu
+    parseTryResult: 1 wins
+    upvote r14
+    return to monke uaauuua
+    parseTryResult: rax wins
+    What the hell happened here? the line ends in "or draw 25": OrDraw25 without parameters and pointer
+    rdi is brilliant, but I like r13
+    parseClearRecord: whomst has summoned the almighty one
+    r14 is brilliant, but I like 47
+
+    What the hell happened here? uaauuuu: OPCODE (record + 0) = r14
+    monke uaauuuu
+    r13 do you know de wey is brilliant, but I like r14
+    rax is brilliant, but I like 1
+    return to monke uaauaaaa
+
+    What the hell happened here? uaauaaa: blank or comment, LINE and TRANSLATE are reset
+    monke uaauaaa
+    sneak 100 rcx
+    rax is brilliant, but I like r13
+    rax units are ready, with 8 more well on the way
+    rax do you know de wey is brilliant, but I like rcx
+    rax units are ready, with 16 more well on the way
+    rax do you know de wey is brilliant, but I like rcx
+    sneak 100 rax
+
+    monke uaauaaaa
+    not stonks r14
+    not stonks r13
+    not stonks r12
+    not stonks rbp
+    not stonks rbx
+    right back at ya, buckaroo
+
+
+What the hell happened here? ------------------------------------------------------------------
+What the hell happened here? parseMatch(rdi = line, rsi = length, rdx = pattern, rcx = pattern length) -> rax = 0: no match,
+What the hell happened here? 1: match (parameters and POINTER are in the record at G+552), 2: the line ends in "or draw 25".
+What the hell happened here? match_command of the reference: the pattern and the line are split into words with the same
+What the hell happened here? rules (strtok_r, only the first word may also end at a tab) and compared word by word.
+What the hell happened here? The record's parameters must be clear and POINTER = -1 before. Two pointers call libFail.
+What the hell happened here? ------------------------------------------------------------------
+I like to have fun, fun, fun, fun, fun, fun, fun, fun, fun, fun parseMatch
+    stonks rbx
+    stonks rbp
+    stonks r12
+    stonks r13
+    stonks r14
+    What the hell happened here? rbx/rbp = rest of the line, r12/r13 = rest of the pattern, r14 = the next parameter slot
+    rbx is brilliant, but I like rdi
+    rbp is brilliant, but I like rsi
+    r12 is brilliant, but I like rdx
+    r13 is brilliant, but I like rcx
+    rax is brilliant, but I like r15
+    rax units are ready, with 552 more well on the way
+    r14 is brilliant, but I like rax do you know de wey
+    r14 units are ready, with 64 more well on the way
+
+    What the hell happened here? the first line word (spaces and tabs are delimiters) -> rax/rdx
+    rdi is brilliant, but I like rbx
+    rsi is brilliant, but I like rbp
+    rdx is brilliant, but I like 1
+    parseNextToken: whomst has summoned the almighty one
+    rbx is brilliant, but I like rdi
+    rbp is brilliant, but I like rsi
+
+    What the hell happened here? uaauaaau: the line word is in rax/rdx; get the pattern word (patterns contain no tabs)
+    monke uaauaaau
+    stonks rax
+    stonks rdx
+    rdi is brilliant, but I like r12
+    rsi is brilliant, but I like r13
+    sneak 100 rdx
+    parseNextToken: whomst has summoned the almighty one
+    r12 is brilliant, but I like rdi
+    r13 is brilliant, but I like rsi
+    rdi is brilliant, but I like rax
+    rsi is brilliant, but I like rdx
+    not stonks rcx
+    not stonks rdx
+    What the hell happened here? rdi/rsi = pattern word, rdx/rcx = line word (length 0 = no word left)
+    who would win? rsi or 0 (parseMatchPatEnd edition)
+    return to monke uaauaaua
+    parseMatchPatEnd: 0 wins
+    parseMatchPatEnd: rsi wins
+    who would win? rcx or 0 (parseMatchLineEnd edition)
+    return to monke uaauaauu
+    parseMatchLineEnd: 0 wins
+    parseMatchLineEnd: rcx wins
+    parseWordMatch: whomst has summoned the almighty one
+    who would win? rax or 1 (parseMatchWord edition)
+    return to monke uaauauaa
+    parseMatchWord: 1 wins
+    return to monke uaauaauu
+    parseMatchWord: rax wins
+
+    What the hell happened here? a parameter: TEXT = rdx, LEN = rcx into the slot
+    r14 do you know de wey is brilliant, but I like rdx
+    rax is brilliant, but I like r14
+    rax units are ready, with 8 more well on the way
+    rax do you know de wey is brilliant, but I like rcx
+    What the hell happened here? does the rest of the line (after the one consumed delimiter) start with "do you know de wey"?
+    rdi is brilliant, but I like rbx
+    rsi is brilliant, but I like rbp
+    rax is brilliant, but I like r15
+    rax units are ready, with 528 more well on the way
+    rdx is brilliant, but I like rax do you know de wey
+    rcx is brilliant, but I like 18
+    parseStartsWith: whomst has summoned the almighty one
+    who would win? rax or 0 (parseMatchPtr edition)
+    return to monke uaauauau
+    parseMatchPtr: 0 wins
+    parseMatchPtr: rax wins
+    What the hell happened here? a pointer: rax = record, rdx = its POINTER field, which must still be -1
+    rax is brilliant, but I like r15
+    rax units are ready, with 552 more well on the way
+    rax is brilliant, but I like rax do you know de wey
+    rdx is brilliant, but I like rax
+    rdx units are ready, with 16 more well on the way
+    rcx is brilliant, but I like rdx do you know de wey
+    who would win? rcx or 0 (parsePtrTwice edition)
+    parsePtrTwice: rcx wins
+    What the hell happened here? "Only one parameter is allowed to be a pointer"
+    libFail: whomst has summoned the almighty one
+    parsePtrTwice: 0 wins
+    What the hell happened here? POINTER = (slot - record - 64) / 64, the suffix is consumed
+    rcx is brilliant, but I like r14
+    parry rax you filthy casual rcx
+    parry 64 you filthy casual rcx
+    look at what 64 needs to mimic a fraction of rcx
+    rdx do you know de wey is brilliant, but I like rcx
+    rbx units are ready, with 18 more well on the way
+    parry 18 you filthy casual rbp
+
+    What the hell happened here? uaauauau: the next parameter slot
+    monke uaauauau
+    r14 units are ready, with 64 more well on the way
+    What the hell happened here? uaauauaa: the next line word (only spaces are delimiters now)
+    monke uaauauaa
+    rdi is brilliant, but I like rbx
+    rsi is brilliant, but I like rbp
+    sneak 100 rdx
+    parseNextToken: whomst has summoned the almighty one
+    rbx is brilliant, but I like rdi
+    rbp is brilliant, but I like rsi
+    return to monke uaauaaau
+
+    What the hell happened here? uaauaaua: the pattern is done. A match if the line is done too
+    monke uaauaaua
+    who would win? rcx or 0 (parseMatchBothEnd edition)
+    rax is brilliant, but I like 1
+    return to monke uaauauua
+    parseMatchBothEnd: 0 wins
+    parseMatchBothEnd: rcx wins
+    What the hell happened here? or the line word is "or" and the rest of the line is exactly "draw 25"
+    rdi is brilliant, but I like rdx
+    rsi is brilliant, but I like rcx
+    rax is brilliant, but I like r15
+    rax units are ready, with 536 more well on the way
+    rdx is brilliant, but I like rax do you know de wey
+    rcx is brilliant, but I like 2
+    libTextEqual: whomst has summoned the almighty one
+    who would win? rax or 0 (parseMatchOr edition)
+    return to monke uaauaauu
+    parseMatchOr: 0 wins
+    parseMatchOr: rax wins
+    rdi is brilliant, but I like rbx
+    rsi is brilliant, but I like rbp
+    rax is brilliant, but I like r15
+    rax units are ready, with 544 more well on the way
+    rdx is brilliant, but I like rax do you know de wey
+    rcx is brilliant, but I like 7
+    libTextEqual: whomst has summoned the almighty one
+    who would win? rax or 0 (parseMatchDraw edition)
+    return to monke uaauaauu
+    parseMatchDraw: 0 wins
+    parseMatchDraw: rax wins
+    rax is brilliant, but I like 2
+    return to monke uaauauua
+
+    monke uaauaauu
+    sneak 100 rax
+    monke uaauauua
+    not stonks r14
+    not stonks r13
+    not stonks r12
+    not stonks rbp
+    not stonks rbx
+    right back at ya, buckaroo
+
+
+What the hell happened here? ------------------------------------------------------------------
+What the hell happened here? parseWordMatch(rdi = pattern word, rsi = length, rdx = line word, rcx = length) -> rax =
+What the hell happened here? 0: mismatch, 1: a literal pattern word equal to the line word,
+What the hell happened here? 2: a parameter word ("{p}", "({p}" or "{p}:") that matches: rdx/rcx = the parameter text
+What the hell happened here? (the line word without the prefix and suffix of the pattern word). The only "{" of a pattern
+What the hell happened here? is the one of "{p}".
+What the hell happened here? ------------------------------------------------------------------
+I like to have fun, fun, fun, fun, fun, fun, fun, fun, fun, fun parseWordMatch
+    stonks rbx
+    stonks rbp
+    stonks r12
+    stonks r13
+    stonks r14
+    rbx is brilliant, but I like rdi
+    rbp is brilliant, but I like rsi
+    r12 is brilliant, but I like rdx
+    r13 is brilliant, but I like rcx
+
+    What the hell happened here? uaauauuu: r14 = position of "{" in the pattern word
+    sneak 100 r14
+    monke uaauauuu
+    who would win? r14 or rbp (parseFindBrace edition)
+    What the hell happened here? none: compare the words
+    rdi is brilliant, but I like rbx
+    rsi is brilliant, but I like rbp
+    rdx is brilliant, but I like r12
+    rcx is brilliant, but I like r13
+    libTextEqual: whomst has summoned the almighty one
+    return to monke uaauuaaa
+    parseFindBrace: r14 wins
+    parseFindBrace: rbp wins
+    rax is brilliant, but I like rbx
+    rax units are ready, with r14 more well on the way
+    sneak 100 rcx
+    cl is brilliant, but I like rax do you know de wey
+    who would win? rcx or 123 (parseIsBrace edition)
+    return to monke uaauuaau
+    parseIsBrace: rcx wins
+    parseIsBrace: 123 wins
+    upvote r14
+    return to monke uaauauuu
+
+    What the hell happened here? uaauuaau: prefix = r14 bytes, rbp = suffix length = word length - r14 - 3
+    monke uaauuaau
+    parry r14 you filthy casual rbp
+    parry 3 you filthy casual rbp
+    rax is brilliant, but I like r14
+    rax units are ready, with rbp more well on the way
+    who would win? r13 or rax (parseParamLen edition)
+    parseParamLen: r13 wins
+    What the hell happened here? the line word starts with the prefix
+    rdi is brilliant, but I like r12
+    rsi is brilliant, but I like r14
+    rdx is brilliant, but I like rbx
+    rcx is brilliant, but I like r14
+    libTextEqual: whomst has summoned the almighty one
+    who would win? rax or 0 (parsePrefixOk edition)
+    return to monke uaauuaua
+    parsePrefixOk: 0 wins
+    parsePrefixOk: rax wins
+    What the hell happened here? and ends with the suffix
+    rdi is brilliant, but I like r12
+    rdi units are ready, with r13 more well on the way
+    parry rbp you filthy casual rdi
+    rsi is brilliant, but I like rbp
+    rdx is brilliant, but I like rbx
+    rdx units are ready, with r14 more well on the way
+    rdx units are ready, with 3 more well on the way
+    rcx is brilliant, but I like rbp
+    libTextEqual: whomst has summoned the almighty one
+    who would win? rax or 0 (parseSuffixOk edition)
+    return to monke uaauuaua
+    parseSuffixOk: 0 wins
+    parseSuffixOk: rax wins
+    rdx is brilliant, but I like r12
+    rdx units are ready, with r14 more well on the way
+    rcx is brilliant, but I like r13
+    parry r14 you filthy casual rcx
+    parry rbp you filthy casual rcx
+    rax is brilliant, but I like 2
+    return to monke uaauuaaa
+
+    What the hell happened here? the line word is shorter than prefix and suffix
+    parseParamLen: rax wins
+    monke uaauuaua
+    sneak 100 rax
+    monke uaauuaaa
+    not stonks r14
+    not stonks r13
+    not stonks r12
+    not stonks rbp
+    not stonks rbx
+    right back at ya, buckaroo
+
+
+What the hell happened here? ------------------------------------------------------------------
+What the hell happened here? parseNextToken(rdi = text, rsi = length, rdx = 1 if tabs are delimiters too, else 0 (only spaces))
+What the hell happened here? -> rax = token, rdx = token length (0: no token left), rdi/rsi = the rest of the text.
+What the hell happened here? next_token / strtok_r: skip delimiters, the token ends at the next delimiter, which is consumed.
+What the hell happened here? ------------------------------------------------------------------
+I like to have fun, fun, fun, fun, fun, fun, fun, fun, fun, fun parseNextToken
+    stonks rbx
+    stonks rbp
+    stonks r12
+    stonks r13
+    What the hell happened here? rbx/rbp = the rest, r12 = the tab flag, r13 = start of the token
+    rbx is brilliant, but I like rdi
+    rbp is brilliant, but I like rsi
+    r12 is brilliant, but I like rdx
+
+    What the hell happened here? uaauuauu: skip the delimiters
+    monke uaauuauu
+    who would win? rbp or 0 (parseTokSkip edition)
+    return to monke uaauuuaa
+    parseTokSkip: 0 wins
+    parseTokSkip: rbp wins
+    sneak 100 rdi
+    dil is brilliant, but I like rbx do you know de wey
+    rsi is brilliant, but I like r12
+    parseIsDelim: whomst has summoned the almighty one
+    who would win? rax or 0 (parseTokSkipDelim edition)
+    return to monke uaauuuau
+    parseTokSkipDelim: 0 wins
+    parseTokSkipDelim: rax wins
+    upvote rbx
+    downvote rbp
+    return to monke uaauuauu
+
+    What the hell happened here? uaauuuaa: only delimiters (or nothing) left: no token, the rest is empty
+    monke uaauuuaa
+    r13 is brilliant, but I like rbx
+    sneak 100 rdx
+    return to monke uaauuuua
+
+    What the hell happened here? uaauuuau / uaauuuuu: the token starts at rbx, find its end
+    monke uaauuuau
+    r13 is brilliant, but I like rbx
+    monke uaauuuuu
+    who would win? rbp or 0 (parseTokEnd edition)
+    return to monke uaauaaaaa
+    parseTokEnd: 0 wins
+    parseTokEnd: rbp wins
+    sneak 100 rdi
+    dil is brilliant, but I like rbx do you know de wey
+    rsi is brilliant, but I like r12
+    parseIsDelim: whomst has summoned the almighty one
+    who would win? rax or 0 (parseTokEndDelim edition)
+    upvote rbx
+    downvote rbp
+    return to monke uaauuuuu
+    parseTokEndDelim: 0 wins
+    parseTokEndDelim: rax wins
+    What the hell happened here? a delimiter ends the token and is consumed
+    rdx is brilliant, but I like rbx
+    parry r13 you filthy casual rdx
+    upvote rbx
+    downvote rbp
+    return to monke uaauuuua
+
+    What the hell happened here? uaauaaaaa: the token runs to the end of the text
+    monke uaauaaaaa
+    rdx is brilliant, but I like rbx
+    parry r13 you filthy casual rdx
+
+    monke uaauuuua
+    rax is brilliant, but I like r13
+    rdi is brilliant, but I like rbx
+    rsi is brilliant, but I like rbp
+    not stonks r13
+    not stonks r12
+    not stonks rbp
+    not stonks rbx
+    right back at ya, buckaroo
+
+
+What the hell happened here? ------------------------------------------------------------------
+What the hell happened here? parseIsDelim(rdi = byte, rsi = 1 if a tab counts too) -> rax = 1 if the byte is a delimiter
+What the hell happened here? (a space, or a tab if rsi = 1), else 0. With rsi = 1 this is is_blank. Only rax is changed.
+What the hell happened here? ------------------------------------------------------------------
+I like to have fun, fun, fun, fun, fun, fun, fun, fun, fun, fun parseIsDelim
+    who would win? rdi or 32 (parseDelimSpace edition)
+    rax is brilliant, but I like 1
+    right back at ya, buckaroo
+    parseDelimSpace: rdi wins
+    parseDelimSpace: 32 wins
+    who would win? rsi or 0 (parseDelimTabs edition)
+    rax is brilliant, but I like 0
+    right back at ya, buckaroo
+    parseDelimTabs: 0 wins
+    parseDelimTabs: rsi wins
+    who would win? rdi or 9 (parseDelimTab edition)
+    rax is brilliant, but I like 1
+    right back at ya, buckaroo
+    parseDelimTab: rdi wins
+    parseDelimTab: 9 wins
+    rax is brilliant, but I like 0
+    right back at ya, buckaroo
+
+
+What the hell happened here? ------------------------------------------------------------------
+What the hell happened here? parseStartsWith(rdi = text, rsi = length, rdx = prefix, rcx = prefix length) -> rax = 1 if the
+What the hell happened here? text starts with the prefix, else 0
+What the hell happened here? ------------------------------------------------------------------
+I like to have fun, fun, fun, fun, fun, fun, fun, fun, fun, fun parseStartsWith
+    who would win? rsi or rcx (parseStartsLen edition)
+    parseStartsLen: rsi wins
+    rsi is brilliant, but I like rcx
+    libTextEqual: whomst has summoned the almighty one
+    right back at ya, buckaroo
+    parseStartsLen: rcx wins
+    rax is brilliant, but I like 0
+    right back at ya, buckaroo
+
+
+What the hell happened here? ------------------------------------------------------------------
+What the hell happened here? parseStrLen(rdi = NUL-terminated text) -> rax = its length
+What the hell happened here? ------------------------------------------------------------------
+I like to have fun, fun, fun, fun, fun, fun, fun, fun, fun, fun parseStrLen
+    sneak 100 rax
+    monke uaauaaaau
+    sneak 100 rcx
+    cl is brilliant, but I like rdi do you know de wey
+    who would win? rcx or 0 (parseStrLenEnd edition)
+    return to monke uaauaaaua
+    parseStrLenEnd: 0 wins
+    parseStrLenEnd: rcx wins
+    upvote rax
+    upvote rdi
+    return to monke uaauaaaau
+    monke uaauaaaua
+    right back at ya, buckaroo
+
+
+What the hell happened here? ------------------------------------------------------------------
+What the hell happened here? parseClearRecord(rdi = record) - POINTER = -1, all three parameters (bytes 64-255) = 0
+What the hell happened here? ------------------------------------------------------------------
+I like to have fun, fun, fun, fun, fun, fun, fun, fun, fun, fun parseClearRecord
+    rax is brilliant, but I like rdi
+    rax units are ready, with 16 more well on the way
+    rcx is brilliant, but I like -1
+    rax do you know de wey is brilliant, but I like rcx
+    rdi units are ready, with 64 more well on the way
+    rcx is brilliant, but I like 24
+    sneak 100 rdx
+    monke uaauaaauu
+    rdi do you know de wey is brilliant, but I like rdx
+    rdi units are ready, with 8 more well on the way
+    downvote rcx
+    who would win? rcx or 0 (parseClearMore edition)
+    return to monke uaauaauaa
+    parseClearMore: 0 wins
+    parseClearMore: rcx wins
+    return to monke uaauaaauu
+    monke uaauaauaa
+    right back at ya, buckaroo
+
+
+What the hell happened here? ------------------------------------------------------------------
+What the hell happened here? parseCheckFunctions() - the errors of function_parser.rs. A function runs from its definition to
+What the hell happened here? its last return before the next definition, everything else is an error. So the program is fine
+What the hell happened here? exactly if the first command is a definition, the command before every other definition is a
+What the hell happened here? return, and so is the last command (Return, ReturnOne, ReturnZero = opcodes 1, 2, 3).
+What the hell happened here? ------------------------------------------------------------------
+I like to have fun, fun, fun, fun, fun, fun, fun, fun, fun, fun parseCheckFunctions
+    stonks rbx
+    stonks rbp
+    What the hell happened here? rbx = record, rbp = number of records from rbx on, rdi = opcode of the previous record
+    rax is brilliant, but I like r15
+    rax units are ready, with 16 more well on the way
+    rbx is brilliant, but I like rax do you know de wey
+    rax units are ready, with 8 more well on the way
+    rbp is brilliant, but I like rax do you know de wey
+    rdi is brilliant, but I like rbx do you know de wey
+    who would win? rdi or 0 (parseFirstDef edition)
+    return to monke uaauaauau
+    parseFirstDef: rdi wins
+    parseFirstDef: 0 wins
+    What the hell happened here? "command does not belong to any function"
+    libFail: whomst has summoned the almighty one
+
+    What the hell happened here? uaauaauau: the next record
+    monke uaauaauau
+    rbx units are ready, with 256 more well on the way
+    downvote rbp
+    who would win? rbp or 0 (parseFnMore edition)
+    return to monke uaauaauua
+    parseFnMore: 0 wins
+    parseFnMore: rbp wins
+    rax is brilliant, but I like rbx do you know de wey
+    who would win? rax or 0 (parseFnDef edition)
+    What the hell happened here? a definition: "expected a return statement, but got a new function definition"
+    parseRequireReturn: whomst has summoned the almighty one
+    parseFnDef: rax wins
+    parseFnDef: 0 wins
+    rdi is brilliant, but I like rbx do you know de wey
+    return to monke uaauaauau
+
+    What the hell happened here? uaauaauua: the last command must be a return ("function does not return")
+    monke uaauaauua
+    parseRequireReturn: whomst has summoned the almighty one
+    not stonks rbp
+    not stonks rbx
+    right back at ya, buckaroo
+
+
+What the hell happened here? parseRequireReturn(rdi = opcode) - calls libFail unless it is a return (1, 2 or 3)
+I like to have fun, fun, fun, fun, fun, fun, fun, fun, fun, fun parseRequireReturn
+    who would win? rdi or 1 (parseRetLow edition)
+    right back at ya, buckaroo
+    parseRetLow: 1 wins
+    libFail: whomst has summoned the almighty one
+    parseRetLow: rdi wins
+    who would win? rdi or 3 (parseRetHigh edition)
+    right back at ya, buckaroo
+    parseRetHigh: rdi wins
+    libFail: whomst has summoned the almighty one
+    parseRetHigh: 3 wins
+    right back at ya, buckaroo
+
+
+What the hell happened here? ------------------------------------------------------------------
+What the hell happened here? parsePut(rdi = up to 8 bytes, the first one in the lowest byte; rbx = write position)
+What the hell happened here? Writes the bytes up to the first zero byte to rbx and advances rbx (on purpose: rbx is the
+What the hell happened here? cursor of parseBuildTable).
+What the hell happened here? ------------------------------------------------------------------
+I like to have fun, fun, fun, fun, fun, fun, fun, fun, fun, fun parsePut
+    monke uaauaauuu
+    who would win? rdi or 0 (parsePutMore edition)
+    return to monke uaauauaaa
+    parsePutMore: 0 wins
+    parsePutMore: rdi wins
+    rbx do you know de wey is brilliant, but I like dil
+    upvote rbx
+    they had us in the first half, not gonna lie rdi
+    they had us in the first half, not gonna lie rdi
+    they had us in the first half, not gonna lie rdi
+    they had us in the first half, not gonna lie rdi
+    they had us in the first half, not gonna lie rdi
+    they had us in the first half, not gonna lie rdi
+    they had us in the first half, not gonna lie rdi
+    they had us in the first half, not gonna lie rdi
+    return to monke uaauaauuu
+    monke uaauauaaa
+    right back at ya, buckaroo
+
+
+What the hell happened here? ------------------------------------------------------------------
+What the hell happened here? parseBuildTable() - writes the patterns of COMMAND_LIST (opcodes 0..46, each followed by a NUL
+What the hell happened here? byte) and the other texts the parser looks for into a new buffer (see the top of this file).
+What the hell happened here? Every number is 8 characters of the text in the comment above it, the first one in the lowest
+What the hell happened here? byte. The buffer is zeroed, so "upvote rbx" writes the NUL after a text.
+What the hell happened here? ------------------------------------------------------------------
+I like to have fun, fun, fun, fun, fun, fun, fun, fun, fun, fun parseBuildTable
+    stonks rbx
+    rdi is brilliant, but I like 4096
+    libAllocate: whomst has summoned the almighty one
+    rbx is brilliant, but I like rax
+    rax is brilliant, but I like r15
+    rax units are ready, with 512 more well on the way
+    rax do you know de wey is brilliant, but I like rbx
+
+    What the hell happened here? 0 FuncDef: "I like to have fun, fun, fun, fun, fun, fun, fun, fun, fun, fun {p}"
+    rdi is brilliant, but I like 8367799619658981449
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 7358993350238150767
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 3201625466593898101
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 8459484325265892896
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 2318349358692576366
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 7959380204817642854
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 7358930644051042348
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 2336934338138762869
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 8220795
+    parsePut: whomst has summoned the almighty one
+    upvote rbx
+    What the hell happened here? 1 Return: "right back at ya, buckaroo"
+    rdi is brilliant, but I like 7017206853736556914
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 7023680778078808931
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 8241986867980017708
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 28527
+    parsePut: whomst has summoned the almighty one
+    upvote rbx
+    What the hell happened here? 2 ReturnOne: "no, I don't think I will"
+    rdi is brilliant, but I like 8026575934325550958
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 7956005064696670062
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 7812735413944655979
+    parsePut: whomst has summoned the almighty one
+    upvote rbx
+    What the hell happened here? 3 ReturnZero: "I see this as an absolute win"
+    rdi is brilliant, but I like 7526676497108770889
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 7953674096835851113
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 8391732706607784224
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 474215817317
+    parsePut: whomst has summoned the almighty one
+    upvote rbx
+    What the hell happened here? 4 Call: "{p}: whomst has summoned the almighty one"
+    rdi is brilliant, but I like 8027797316091867259
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 2338319731384415085
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 7234309801296885107
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 7884783839387087904
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 7957614772603086697
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 101
+    parsePut: whomst has summoned the almighty one
+    upvote rbx
+    What the hell happened here? 5 Push: "stonks {p}"
+    rdi is brilliant, but I like 8872218171171370099
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 32112
+    parsePut: whomst has summoned the almighty one
+    upvote rbx
+    What the hell happened here? 6 Pop: "not stonks {p}"
+    rdi is brilliant, but I like 7957707104401518446
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 137922055533419
+    parsePut: whomst has summoned the almighty one
+    upvote rbx
+    What the hell happened here? 7 And: "bitconneeeeeeect {p} {p}"
+    rdi is brilliant, but I like 7308900669957892450
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 8386658417261241701
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 9038859831606278944
+    parsePut: whomst has summoned the almighty one
+    upvote rbx
+    What the hell happened here? 8 Not: "{p} \s"
+    rdi is brilliant, but I like 126839519277179
+    parsePut: whomst has summoned the almighty one
+    upvote rbx
+    What the hell happened here? 9 Zero: "sneak 100 {p}"
+    rdi is brilliant, but I like 3472592433246989939
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 538758029360
+    parsePut: whomst has summoned the almighty one
+    upvote rbx
+    What the hell happened here? 10 Mov: "{p} is brilliant, but I like {p}"
+    rdi is brilliant, but I like 7070778310325530747
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 8389750261256317298
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 2326426367071232044
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 9038859831203293548
+    parsePut: whomst has summoned the almighty one
+    upvote rbx
+    What the hell happened here? 11 Upvote: "upvote {p}"
+    rdi is brilliant, but I like 8872202816680521845
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 32112
+    parsePut: whomst has summoned the almighty one
+    upvote rbx
+    What the hell happened here? 12 Downvote: "downvote {p}"
+    rdi is brilliant, but I like 7310590649579302756
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 2104523552
+    parsePut: whomst has summoned the almighty one
+    upvote rbx
+    What the hell happened here? 13 Parry: "parry {p} you filthy casual {p}"
+    rdi is brilliant, but I like 8105107660366569840
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 7594793510360391805
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 8314035378229638252
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 35308046216094069
+    parsePut: whomst has summoned the almighty one
+    upvote rbx
+    What the hell happened here? 14 Add: "{p} units are ready, with {p} more well on the way"
+    rdi is brilliant, but I like 8388357230289580155
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 7309940765258489971
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 8388366761023071329
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 8029109433801580648
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 2336361489744553330
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 8583972389067452015
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 31073
+    parsePut: whomst has summoned the almighty one
+    upvote rbx
+    What the hell happened here? 15 Shl: "upgrades, people. Upgrades {p}"
+    rdi is brilliant, but I like 8315162656703475829
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 7308339919061000236
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 7233188265125552174
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 137922055533413
+    parsePut: whomst has summoned the almighty one
+    upvote rbx
+    What the hell happened here? 16 Shr: "they had us in the first half, not gonna lie {p}"
+    rdi is brilliant, but I like 7233176965218658420
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 8367809505449440544
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 8391176327731897704
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 7935391361843423264
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 7020670293867787375
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 9038859831203163168
+    parsePut: whomst has summoned the almighty one
+    upvote rbx
+    What the hell happened here? 17 Imul: "{p} is getting out of hand, now there are {p} of them"
+    rdi is brilliant, but I like 7431066280515170427
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 8007513861378045029
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 7018895643580068981
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 2339461050219127918
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 8241904413147752564
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 7381154037413650533
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 469852779552
+    parsePut: whomst has summoned the almighty one
+    upvote rbx
+    What the hell happened here? 18 Divide: "look at what {p} needs to mimic a fraction of {p}"
+    rdi is brilliant, but I like 2338600898381442924
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 9038859831454296183
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 8367814982689451552
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 2333824950549160047
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 7598807741463142497
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 8105107578706488943
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 125
+    parsePut: whomst has summoned the almighty one
+    upvote rbx
+    What the hell happened here? 19 Power: "{p} UNLIMITED POWER {p}"
+    rdi is brilliant, but I like 5281682590523027579
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 5715103404726176077
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 35308046214382935
+    parsePut: whomst has summoned the almighty one
+    upvote rbx
+    What the hell happened here? 20 Upgrade: "upgrade"
+    rdi is brilliant, but I like 28539342341763189
+    parsePut: whomst has summoned the almighty one
+    upvote rbx
+    What the hell happened here? 21 FuckGoBack: "fuck go back"
+    rdi is brilliant, but I like 2337200120566871398
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 1801675106
+    parsePut: whomst has summoned the almighty one
+    upvote rbx
+    What the hell happened here? 22 Banana: "banana"
+    rdi is brilliant, but I like 107126708920674
+    parsePut: whomst has summoned the almighty one
+    upvote rbx
+    What the hell happened here? 23 WhereBanana: "where banana"
+    rdi is brilliant, but I like 7017206789479688311
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 1634623854
+    parsePut: whomst has summoned the almighty one
+    upvote rbx
+    What the hell happened here? 24 Monke: "monke {p}"
+    rdi is brilliant, but I like 8105107574349524845
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 125
+    parsePut: whomst has summoned the almighty one
+    upvote rbx
+    What the hell happened here? 25 ReturnToMonke: "return to monke {p}"
+    rdi is brilliant, but I like 8367809545530271090
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 2334390103921467503
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 8220795
+    parsePut: whomst has summoned the almighty one
+    upvote rbx
+    What the hell happened here? 26 WhoWouldWin: "who would win? {p} or {p}"
+    rdi is brilliant, but I like 7815275285807327351
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 8872161009368244324
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 8105107630246100336
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 125
+    parsePut: whomst has summoned the almighty one
+    upvote rbx
+    What the hell happened here? 27 Wins: "{p} wins"
+    rdi is brilliant, but I like 8317701522167001211
+    parsePut: whomst has summoned the almighty one
+    upvote rbx
+    What the hell happened here? 28 WhoWouldWinEdition: "who would win? {p} or {p} ({p} edition)"
+    rdi is brilliant, but I like 7815275285807327351
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 8872161009368244324
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 8105107630246100336
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 7286962119141499005
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 11661898834798948
+    parsePut: whomst has summoned the almighty one
+    upvote rbx
+    What the hell happened here? 29 EditionWins: "{p}: {p} wins"
+    rdi is brilliant, but I like 9038859830483054715
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 495773644576
+    parsePut: whomst has summoned the almighty one
+    upvote rbx
+    What the hell happened here? 30 FindDifference: "corporate needs you to find the difference between {p} and {p}"
+    rdi is brilliant, but I like 8386109804094058339
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 2338323018191609957
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 7359004335674847097
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 2334386829830418025
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 7954890096655100260
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 7311440498846098787
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 6998731742989282917
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 137922055529582
+    parsePut: whomst has summoned the almighty one
+    upvote rbx
+    What the hell happened here? 31 SamePicture: "they're the same picture"
+    rdi is brilliant, but I like 2334397495727450228
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 7308604917384833140
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 7310034287920246816
+    parsePut: whomst has summoned the almighty one
+    upvote rbx
+    What the hell happened here? 32 WriteChar: "what can I say except {p}"
+    rdi is brilliant, but I like 7953747407955650679
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 7286957656535746848
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 8105107638857327480
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 125
+    parsePut: whomst has summoned the almighty one
+    upvote rbx
+    What the hell happened here? 33 ReadChar: "let me in. LET ME IIIIIIIIN {p}"
+    rdi is brilliant, but I like 7575166092607513964
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 5557534596781846126
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 5280832617179586629
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 35308046214121801
+    parsePut: whomst has summoned the almighty one
+    upvote rbx
+    What the hell happened here? 34 FreeRealEstate: "it's free real estate {p}"
+    rdi is brilliant, but I like 7310017434732688489
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 7286943362655068261
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 8105107574499669107
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 125
+    parsePut: whomst has summoned the almighty one
+    upvote rbx
+    What the hell happened here? 35 Die: "guess I'll die"
+    rdi is brilliant, but I like 2830829521008424295
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 111503325817964
+    parsePut: whomst has summoned the almighty one
+    upvote rbx
+    What the hell happened here? 36 ConfusedStonks: "confused stonks"
+    rdi is brilliant, but I like 7234315324507451235
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 32487744382202656
+    parsePut: whomst has summoned the almighty one
+    upvote rbx
+    What the hell happened here? 37 PerfectlyBalanced: "perfectly balanced as all things should be"
+    rdi is brilliant, but I like 7814980540556273008
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 7164771175311220857
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 7809558908759991397
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 8315736635965972588
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 2334109758520849184
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 25954
+    parsePut: whomst has summoned the almighty one
+    upvote rbx
+    What the hell happened here? 38 Illegal: "wait, that's illegal"
+    rdi is brilliant, but I like 7526676252546654583
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 7812735041672803425
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 1818322789
+    parsePut: whomst has summoned the almighty one
+    upvote rbx
+    What the hell happened here? 39 OhNo: "oh no! anyway"
+    rdi is brilliant, but I like 6998630583406454895
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 521326262638
+    parsePut: whomst has summoned the almighty one
+    upvote rbx
+    What the hell happened here? 40 Over9000: "it's over 9000 {p}"
+    rdi is brilliant, but I like 7311153230244181097
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 8872144249445490802
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 32112
+    parsePut: whomst has summoned the almighty one
+    upvote rbx
+    What the hell happened here? 41 RefusesToElaborate: "refuses to elaborate and leaves"
+    rdi is brilliant, but I like 2338324178100708722
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 8026084604108631924
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 7236828442999939442
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 32481181436308512
+    parsePut: whomst has summoned the almighty one
+    upvote rbx
+    What the hell happened here? 42 ShallNotPass: "you shall not pass!"
+    rdi is brilliant, but I like 7809638072512245625
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 7021147503528386668
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 2192243
+    parsePut: whomst has summoned the almighty one
+    upvote rbx
+    What the hell happened here? 43 Houston: "Houston, we have a problem"
+    rdi is brilliant, but I like 3201618931050966856
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 7311138144930592544
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 7809927241111986464
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 28005
+    parsePut: whomst has summoned the almighty one
+    upvote rbx
+    What the hell happened here? 44 Rdrand: "it's dangerous to go alone, take {p}"
+    rdi is brilliant, but I like 7953748507446703209
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 8367815055872517479
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 8028899027630628975
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 7308041971722642798
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 2104523552
+    parsePut: whomst has summoned the almighty one
+    upvote rbx
+    What the hell happened here? 45 AirSupport: "we need air support"
+    rdi is brilliant, but I like 2334101993198478711
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 8102104866965580129
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 7631471
+    parsePut: whomst has summoned the almighty one
+    upvote rbx
+    What the hell happened here? 46 Trap: "it's a trap"
+    rdi is brilliant, but I like 8367794899653194857
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 7364978
+    parsePut: whomst has summoned the almighty one
+    upvote rbx
+
+    What the hell happened here? G+520: "What the hell happened here?"
+    rax is brilliant, but I like r15
+    rax units are ready, with 520 more well on the way
+    rax do you know de wey is brilliant, but I like rbx
+    rdi is brilliant, but I like 7307218078148946007
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 7018895669304059936
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 7503107366005862512
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 1063613029
+    parsePut: whomst has summoned the almighty one
+    upvote rbx
+
+    What the hell happened here? G+528: "do you know de wey"
+    rax is brilliant, but I like r15
+    rax units are ready, with 528 more well on the way
+    rax do you know de wey is brilliant, but I like rbx
+    rdi is brilliant, but I like 7719298882947018596
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 8583972370483998574
+    parsePut: whomst has summoned the almighty one
+    rdi is brilliant, but I like 31077
+    parsePut: whomst has summoned the almighty one
+    upvote rbx
+
+    What the hell happened here? G+536: "or"
+    rax is brilliant, but I like r15
+    rax units are ready, with 536 more well on the way
+    rax do you know de wey is brilliant, but I like rbx
+    rdi is brilliant, but I like 29295
+    parsePut: whomst has summoned the almighty one
+    upvote rbx
+
+    What the hell happened here? G+544: "draw 25"
+    rax is brilliant, but I like r15
+    rax units are ready, with 544 more well on the way
+    rax do you know de wey is brilliant, but I like rbx
+    rdi is brilliant, but I like 14973288788882020
+    parsePut: whomst has summoned the almighty one
+    upvote rbx
+
+    not stonks rbx
     right back at ya, buckaroo

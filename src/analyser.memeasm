@@ -1,7 +1,2029 @@
 What the hell happened here? ==================================================================
-What the hell happened here? analyser.memeasm - STUB, to be replaced (see DESIGN.md)
+What the hell happened here? analyser.memeasm - the analyser of the self-hosted MemeAssembly compiler
+What the hell happened here? It does what src/frontend/analyser/{parameters,mod,helper}.rs of the reference do (one input file, -S output, noob mode):
+What the hell happened here?   1. classifies every used parameter: TYPE, VALUE, VERBATIM and ESCAPE of the command records (DESIGN.md)
+What the hell happened here?   2. rejects pointers that are no register, bad parameter combinations and what x86-64 cannot encode
+What the hell happened here?   3. checks the labels: function names, upgrade/banana, monke, who would win (with and without edition), same picture
+What the hell happened here?   4. makes the random choices: CONFUSED_INDEX and the commands that "perfectly balanced" deletes
+What the hell happened here? Every error calls libFail. There is no main-function check and no call-target check (the reference
+What the hell happened here? only does those for executables).
+What the hell happened here?
 What the hell happened here? Monke label prefix of this file: uau. Edition / function prefix: ana.
+What the hell happened here? Monke labels are uau + 4 letters for the function + 4 letters for the place in the function.
+What the hell happened here?
+What the hell happened here? Private globals of the analyser (G = r15):
+What the hell happened here?   G+1024 ANA_REGS     pointer to 68 qwords: the register names packed into numbers (anaPack), by register number
+What the hell happened here?   G+1032 ANA_ESCAPES  pointer to 10 qwords: the escape sequences packed into numbers, in ESCAPE_SEQUENCES order
+What the hell happened here?   G+1040 ANA_ESCVALS  pointer to 10 qwords: the byte values of the escape sequences
+What the hell happened here?   G+1048 ANA_TYPES    pointer to 49 qwords, by opcode: t0 + 512 * t1 + 262144 * t2 + 134217728 * pointer mask
+What the hell happened here?                       (t0..t2 = the allowed PARAM_* types of the parameters, 0 = unused parameter;
+What the hell happened here?                       pointer mask bit 0/1 = parameter 0/1 may be a pointer, see pointer_use in commands.rs)
+What the hell happened here?   G+1056 ANA_CHILD    anaCheckCompanions: the opcode of the companion command
+What the hell happened here?   G+1064 ANA_NPARAMS  anaCheckCompanions: how many parameters need a companion
+What the hell happened here?   G+1072 ANA_EDITION  anaCheckCompanions: 1 for comparisons with an edition
+What the hell happened here?   G+1080 ANA_END      CMDS + CMD_COUNT * 256, the end of the command records
+What the hell happened here? The tables live on the stack of analyseProgram: they exist exactly as long as the analysis runs.
+What the hell happened here?
+What the hell happened here? Internal convention: anaParseDecimal returns a second result in rdx. Everything else is DESIGN.md.
 What the hell happened here? ==================================================================
 
+
+What the hell happened here? analyseProgram() - the whole analysis (DESIGN.md, stage 3)
 I like to have fun, fun, fun, fun, fun, fun, fun, fun, fun, fun analyseProgram
+    stonks rbx
+    stonks rbp
+    stonks r12
+    stonks r13
+    stonks r14
+
+    What the hell happened here? ANA_END = CMDS + CMD_COUNT * 256
+    rax is brilliant, but I like r15
+    rax units are ready, with 24 more well on the way
+    rax is brilliant, but I like rax do you know de wey
+    rax is getting out of hand, now there are 256 of them
+    rcx is brilliant, but I like r15
+    rcx units are ready, with 16 more well on the way
+    rcx is brilliant, but I like rcx do you know de wey
+    rax units are ready, with rcx more well on the way
+    rcx is brilliant, but I like r15
+    rcx units are ready, with 1080 more well on the way
+    rcx do you know de wey is brilliant, but I like rax
+
+    What the hell happened here? ---- Table ANA_TYPES: the allowed parameter types of every opcode (COMMAND_LIST in commands.rs) ----
+    What the hell happened here? Pushed from the last opcode down, so that opcode 0 ends up at the lowest address (= rsp).
+    What the hell happened here? Each entry: t0 + 512 * t1 + 262144 * t2 + 134217728 * pointer mask, with REG64 = 1, REG32 = 2, REG16 = 4,
+    What the hell happened here? REG8 = 8, DECIMAL = 16, CHAR = 32, MONKE_LABEL = 64, FUNC_NAME = 128, COMPARISON_LABEL = 256.
+    What the hell happened here? opcode 48 Invalid: no parameters; no pointer
+    stonks 0
+    What the hell happened here? opcode 47 OrDraw25: no parameters; no pointer
+    stonks 0
+    What the hell happened here? opcode 46 Trap: no parameters; no pointer
+    stonks 0
+    What the hell happened here? opcode 45 AirSupport: no parameters; no pointer
+    stonks 0
+    What the hell happened here? opcode 44 Rdrand: REG64|REG32|REG16; no pointer
+    stonks 7
+    What the hell happened here? opcode 43 Houston: no parameters; no pointer
+    stonks 0
+    What the hell happened here? opcode 42 ShallNotPass: no parameters; no pointer
+    stonks 0
+    What the hell happened here? opcode 41 RefusesToElaborate: no parameters; no pointer
+    stonks 0
+    What the hell happened here? opcode 40 Over9000: REG64|REG32|REG16|REG8; no pointer
+    stonks 15
+    What the hell happened here? opcode 39 OhNo: no parameters; no pointer
+    stonks 0
+    What the hell happened here? opcode 38 Illegal: no parameters; no pointer
+    stonks 0
+    What the hell happened here? opcode 37 PerfectlyBalanced: no parameters; no pointer
+    stonks 0
+    What the hell happened here? opcode 36 ConfusedStonks: no parameters; no pointer
+    stonks 0
+    What the hell happened here? opcode 35 Die: no parameters; no pointer
+    stonks 0
+    What the hell happened here? opcode 34 FreeRealEstate: REG64; no pointer
+    stonks 1
+    What the hell happened here? opcode 33 ReadChar: REG8; no pointer
+    stonks 8
+    What the hell happened here? opcode 32 WriteChar: REG8|CHAR; no pointer
+    stonks 40
+    What the hell happened here? opcode 31 SamePicture: no parameters; no pointer
+    stonks 0
+    What the hell happened here? opcode 30 FindDifference: REG64|REG32|REG16|REG8, REG64|REG32|REG16|REG8|DECIMAL|CHAR; pointer as parameter 0 or 1
+    stonks 402685455
+    What the hell happened here? opcode 29 EditionWins: COMPARISON_LABEL, REG64|REG32|REG16|REG8|DECIMAL|CHAR; no pointer
+    stonks 32512
+    What the hell happened here? opcode 28 WhoWouldWinEdition: REG64|REG32|REG16|REG8, REG64|REG32|REG16|REG8|DECIMAL|CHAR, COMPARISON_LABEL; no pointer
+    stonks 67141135
+    What the hell happened here? opcode 27 Wins: REG64|REG32|REG16|REG8|DECIMAL|CHAR; no pointer
+    stonks 63
+    What the hell happened here? opcode 26 WhoWouldWin: REG64|REG32|REG16|REG8, REG64|REG32|REG16|REG8|DECIMAL|CHAR; no pointer
+    stonks 32271
+    What the hell happened here? opcode 25 ReturnToMonke: MONKE_LABEL; no pointer
+    stonks 64
+    What the hell happened here? opcode 24 Monke: MONKE_LABEL; no pointer
+    stonks 64
+    What the hell happened here? opcode 23 WhereBanana: no parameters; no pointer
+    stonks 0
+    What the hell happened here? opcode 22 Banana: no parameters; no pointer
+    stonks 0
+    What the hell happened here? opcode 21 FuckGoBack: no parameters; no pointer
+    stonks 0
+    What the hell happened here? opcode 20 Upgrade: no parameters; no pointer
+    stonks 0
+    What the hell happened here? opcode 19 Power: REG64, REG64|DECIMAL|CHAR; no pointer
+    stonks 25089
+    What the hell happened here? opcode 18 Divide: REG64|DECIMAL|CHAR, REG64; pointer as parameter 1
+    stonks 268436017
+    What the hell happened here? opcode 17 Imul: REG64|REG32, REG64|REG32|DECIMAL|CHAR; pointer as parameter 1
+    stonks 268461571
+    What the hell happened here? opcode 16 Shr: REG64|REG32|REG16|REG8; no pointer
+    stonks 15
+    What the hell happened here? opcode 15 Shl: REG64|REG32|REG16|REG8; no pointer
+    stonks 15
+    What the hell happened here? opcode 14 Add: REG64|REG32|REG16|REG8, REG64|REG32|REG16|REG8|DECIMAL|CHAR; pointer as parameter 0 or 1
+    stonks 402685455
+    What the hell happened here? opcode 13 Parry: REG64|REG32|REG16|REG8|DECIMAL|CHAR, REG64|REG32|REG16|REG8; pointer as parameter 0 or 1
+    stonks 402660927
+    What the hell happened here? opcode 12 Downvote: REG64|REG32|REG16|REG8; no pointer
+    stonks 15
+    What the hell happened here? opcode 11 Upvote: REG64|REG32|REG16|REG8; no pointer
+    stonks 15
+    What the hell happened here? opcode 10 Mov: REG64|REG32|REG16|REG8, REG64|REG32|REG16|REG8|DECIMAL|CHAR; pointer as parameter 0 or 1
+    stonks 402685455
+    What the hell happened here? opcode 9 Zero: REG64|REG32|REG16|REG8; no pointer
+    stonks 15
+    What the hell happened here? opcode 8 Not: REG64|REG32|REG16|REG8; no pointer
+    stonks 15
+    What the hell happened here? opcode 7 And: REG64|REG32|REG16|REG8, REG64|REG32|REG16|REG8|DECIMAL|CHAR; pointer as parameter 0 or 1
+    stonks 402685455
+    What the hell happened here? opcode 6 Pop: REG64; pointer as parameter 0
+    stonks 134217729
+    What the hell happened here? opcode 5 Push: REG64|DECIMAL|CHAR; pointer as parameter 0
+    stonks 134217777
+    What the hell happened here? opcode 4 Call: FUNC_NAME; no pointer
+    stonks 128
+    What the hell happened here? opcode 3 ReturnZero: no parameters; no pointer
+    stonks 0
+    What the hell happened here? opcode 2 ReturnOne: no parameters; no pointer
+    stonks 0
+    What the hell happened here? opcode 1 Return: no parameters; no pointer
+    stonks 0
+    What the hell happened here? opcode 0 FuncDef: FUNC_NAME; no pointer
+    stonks 128
+    rax is brilliant, but I like r15
+    rax units are ready, with 1048 more well on the way
+    rax do you know de wey is brilliant, but I like rsp
+
+    What the hell happened here? ---- Table ANA_ESCVALS: the value of each escape sequence ----
+    What the hell happened here? escape 10 (backslash backslash) has the value 92
+    stonks 92
+    What the hell happened here? escape 9 (backslash question mark) has the value 63
+    stonks 63
+    What the hell happened here? escape 8 (backslash quote) has the value 34
+    stonks 34
+    What the hell happened here? escape 7 (backslash v) has the value 11
+    stonks 11
+    What the hell happened here? escape 6 (backslash b) has the value 8
+    stonks 8
+    What the hell happened here? escape 5 (backslash f) has the value 12
+    stonks 12
+    What the hell happened here? escape 4 (backslash t) has the value 9
+    stonks 9
+    What the hell happened here? escape 3 (space) has the value 32
+    stonks 32
+    What the hell happened here? escape 2 (backslash s) has the value 32
+    stonks 32
+    What the hell happened here? escape 1 (backslash n) has the value 10
+    stonks 10
+    rax is brilliant, but I like r15
+    rax units are ready, with 1040 more well on the way
+    rax do you know de wey is brilliant, but I like rsp
+
+    What the hell happened here? ---- Table ANA_ESCAPES: the escape sequences, packed like anaPack does (first byte = lowest byte) ----
+    What the hell happened here? escape 10 is backslash backslash
+    stonks 23644
+    What the hell happened here? escape 9 is backslash question mark
+    stonks 16220
+    What the hell happened here? escape 8 is backslash quote
+    stonks 8796
+    What the hell happened here? escape 7 is backslash v
+    stonks 30300
+    What the hell happened here? escape 6 is backslash b
+    stonks 25180
+    What the hell happened here? escape 5 is backslash f
+    stonks 26204
+    What the hell happened here? escape 4 is backslash t
+    stonks 29788
+    What the hell happened here? escape 3 is space (too large for a pushed number, so through rax)
+    rax is brilliant, but I like 435459027059
+    stonks rax
+    What the hell happened here? escape 2 is backslash s
+    stonks 29532
+    What the hell happened here? escape 1 is backslash n
+    stonks 28252
+    rax is brilliant, but I like r15
+    rax units are ready, with 1032 more well on the way
+    rax do you know de wey is brilliant, but I like rsp
+
+    What the hell happened here? ---- Table ANA_REGS: the register names, packed like anaPack does, by register number (DESIGN.md) ----
+    What the hell happened here? register 67 is r15b
+    stonks 1647653234
+    What the hell happened here? register 66 is r14b
+    stonks 1647587698
+    What the hell happened here? register 65 is r13b
+    stonks 1647522162
+    What the hell happened here? register 64 is r12b
+    stonks 1647456626
+    What the hell happened here? register 63 is r11b
+    stonks 1647391090
+    What the hell happened here? register 62 is r10b
+    stonks 1647325554
+    What the hell happened here? register 61 is r9b
+    stonks 6437234
+    What the hell happened here? register 60 is r8b
+    stonks 6436978
+    What the hell happened here? register 59 is bpl
+    stonks 7106658
+    What the hell happened here? register 58 is spl
+    stonks 7106675
+    What the hell happened here? register 57 is sil
+    stonks 7104883
+    What the hell happened here? register 56 is dil
+    stonks 7104868
+    What the hell happened here? register 55 is dh
+    stonks 26724
+    What the hell happened here? register 54 is dl
+    stonks 27748
+    What the hell happened here? register 53 is ch
+    stonks 26723
+    What the hell happened here? register 52 is cl
+    stonks 27747
+    What the hell happened here? register 51 is bh
+    stonks 26722
+    What the hell happened here? register 50 is bl
+    stonks 27746
+    What the hell happened here? register 49 is ah
+    stonks 26721
+    What the hell happened here? register 48 is al
+    stonks 27745
+    What the hell happened here? register 47 is r15w
+    stonks 1999974770
+    What the hell happened here? register 46 is r14w
+    stonks 1999909234
+    What the hell happened here? register 45 is r13w
+    stonks 1999843698
+    What the hell happened here? register 44 is r12w
+    stonks 1999778162
+    What the hell happened here? register 43 is r11w
+    stonks 1999712626
+    What the hell happened here? register 42 is r10w
+    stonks 1999647090
+    What the hell happened here? register 41 is r9w
+    stonks 7813490
+    What the hell happened here? register 40 is r8w
+    stonks 7813234
+    What the hell happened here? register 39 is bp
+    stonks 28770
+    What the hell happened here? register 38 is sp
+    stonks 28787
+    What the hell happened here? register 37 is si
+    stonks 26995
+    What the hell happened here? register 36 is di
+    stonks 26980
+    What the hell happened here? register 35 is dx
+    stonks 30820
+    What the hell happened here? register 34 is cx
+    stonks 30819
+    What the hell happened here? register 33 is bx
+    stonks 30818
+    What the hell happened here? register 32 is ax
+    stonks 30817
+    What the hell happened here? register 31 is r15d
+    stonks 1681207666
+    What the hell happened here? register 30 is r14d
+    stonks 1681142130
+    What the hell happened here? register 29 is r13d
+    stonks 1681076594
+    What the hell happened here? register 28 is r12d
+    stonks 1681011058
+    What the hell happened here? register 27 is r11d
+    stonks 1680945522
+    What the hell happened here? register 26 is r10d
+    stonks 1680879986
+    What the hell happened here? register 25 is r9d
+    stonks 6568306
+    What the hell happened here? register 24 is r8d
+    stonks 6568050
+    What the hell happened here? register 23 is ebp
+    stonks 7365221
+    What the hell happened here? register 22 is esp
+    stonks 7369573
+    What the hell happened here? register 21 is esi
+    stonks 6910821
+    What the hell happened here? register 20 is edi
+    stonks 6906981
+    What the hell happened here? register 19 is edx
+    stonks 7890021
+    What the hell happened here? register 18 is ecx
+    stonks 7889765
+    What the hell happened here? register 17 is ebx
+    stonks 7889509
+    What the hell happened here? register 16 is eax
+    stonks 7889253
+    What the hell happened here? register 15 is r15
+    stonks 3486066
+    What the hell happened here? register 14 is r14
+    stonks 3420530
+    What the hell happened here? register 13 is r13
+    stonks 3354994
+    What the hell happened here? register 12 is r12
+    stonks 3289458
+    What the hell happened here? register 11 is r11
+    stonks 3223922
+    What the hell happened here? register 10 is r10
+    stonks 3158386
+    What the hell happened here? register 9 is r9
+    stonks 14706
+    What the hell happened here? register 8 is r8
+    stonks 14450
+    What the hell happened here? register 7 is rbp
+    stonks 7365234
+    What the hell happened here? register 6 is rsp
+    stonks 7369586
+    What the hell happened here? register 5 is rsi
+    stonks 6910834
+    What the hell happened here? register 4 is rdi
+    stonks 6906994
+    What the hell happened here? register 3 is rdx
+    stonks 7890034
+    What the hell happened here? register 2 is rcx
+    stonks 7889778
+    What the hell happened here? register 1 is rbx
+    stonks 7889522
+    What the hell happened here? register 0 is rax
+    stonks 7889266
+    rax is brilliant, but I like r15
+    rax units are ready, with 1024 more well on the way
+    rax do you know de wey is brilliant, but I like rsp
+
+    anaClassifyAll: whomst has summoned the almighty one
+    anaCheckLabels: whomst has summoned the almighty one
+    anaRandomChoices: whomst has summoned the almighty one
+
+    What the hell happened here? drop the tables: (49 + 10 + 10 + 68) qwords = 1096 bytes
+    rsp units are ready, with 1096 more well on the way
+    not stonks r14
+    not stonks r13
+    not stonks r12
+    not stonks rbp
+    not stonks rbx
+    right back at ya, buckaroo
+
+
+What the hell happened here? ==================================================================
+What the hell happened here? Part 1: classification of the parameters (check_parameter / classify in parameters.rs)
+What the hell happened here? ==================================================================
+
+What the hell happened here? anaClassifyAll() - classifies the used parameters of every command, then checks the command (check_command)
+What the hell happened here? r12 = the record, r14 = the allowed types still to do (9 bits each), rbx = parameter index, rbp = the parameter
+What the hell happened here? Monke labels: uauaaaa|aaaa = next command, aaau = all done, aaua = next parameter, aauu = parameters done
+I like to have fun, fun, fun, fun, fun, fun, fun, fun, fun, fun anaClassifyAll
+    stonks rbx
+    stonks rbp
+    stonks r12
+    stonks r13
+    stonks r14
+    r12 is brilliant, but I like r15
+    r12 units are ready, with 16 more well on the way
+    r12 is brilliant, but I like r12 do you know de wey
+
+    monke uauaaaaaaaa
+    rax is brilliant, but I like r15
+    rax units are ready, with 1080 more well on the way
+    rax is brilliant, but I like rax do you know de wey
+    who would win? r12 or rax (anaAllEnd edition)
+    return to monke uauaaaaaaau
+    anaAllEnd: r12 wins
+    anaAllEnd: rax wins
+
+    What the hell happened here? r14 = ANA_TYPES[opcode] without the pointer mask
+    rax is brilliant, but I like r12 do you know de wey
+    rax is getting out of hand, now there are 8 of them
+    rcx is brilliant, but I like r15
+    rcx units are ready, with 1048 more well on the way
+    rcx is brilliant, but I like rcx do you know de wey
+    rax units are ready, with rcx more well on the way
+    r14 is brilliant, but I like rax do you know de wey
+    bitconneeeeeeect r14 134217727
+    rbx is brilliant, but I like 0
+    rbp is brilliant, but I like r12
+    rbp units are ready, with 64 more well on the way
+
+    monke uauaaaaaaua
+    What the hell happened here? the allowed types of this parameter; 0 = the command has no more parameters
+    rsi is brilliant, but I like r14
+    bitconneeeeeeect rsi 511
+    who would win? rsi or 0 (anaAllParam edition)
+    return to monke uauaaaaaauu
+    anaAllParam: rsi wins
+    anaAllParam: 0 wins
+    rdi is brilliant, but I like rbp
+    anaClassify: whomst has summoned the almighty one
+
+    What the hell happened here? "a decimal number / character / jump marker / ... cannot be a pointer": a pointer must be a register
+    rax is brilliant, but I like r12
+    rax units are ready, with 16 more well on the way
+    rax is brilliant, but I like rax do you know de wey
+    who would win? rax or rbx (anaAllPointer edition)
+    rax is brilliant, but I like rbp
+    rax units are ready, with 16 more well on the way
+    rax is brilliant, but I like rax do you know de wey
+    bitconneeeeeeect rax 15
+    who would win? rax or 0 (anaAllPointerReg edition)
+    libFail: whomst has summoned the almighty one
+    anaAllPointer: rax wins
+    anaAllPointer: rbx wins
+    anaAllPointerReg: rax wins
+    anaAllPointerReg: 0 wins
+
+    look at what 512 needs to mimic a fraction of r14
+    upvote rbx
+    rbp units are ready, with 64 more well on the way
+    return to monke uauaaaaaaua
+
+    monke uauaaaaaauu
+    rdi is brilliant, but I like r12
+    anaCheckCommand: whomst has summoned the almighty one
+    r12 units are ready, with 256 more well on the way
+    return to monke uauaaaaaaaa
+
+    monke uauaaaaaaau
+    not stonks r14
+    not stonks r13
+    not stonks r12
+    not stonks rbp
+    not stonks rbx
+    right back at ya, buckaroo
+
+
+What the hell happened here? anaClassify(rdi = parameter, rsi = allowed types) - classify: sets TYPE and VALUE (and VERBATIM, ESCAPE for
+What the hell happened here? characters) of the parameter as the first allowed type it matches, in the order register, decimal number,
+What the hell happened here? character, monke label, function name, comparison label. Fails if it matches none or is too large.
+What the hell happened here? r12 = parameter, r13 = allowed types, rbx = text, rbp = length
+What the hell happened here? Monke labels: uauaaau|aaaa = decimal?, aaau = character?, aaua = monke?, aauu = function?, auaa = comparison label?,
+What the hell happened here?               auau = fail, auua = return
+I like to have fun, fun, fun, fun, fun, fun, fun, fun, fun, fun anaClassify
+    stonks rbx
+    stonks rbp
+    stonks r12
+    stonks r13
+    r12 is brilliant, but I like rdi
+    r13 is brilliant, but I like rsi
+    rbx is brilliant, but I like r12 do you know de wey
+    rbp is brilliant, but I like r12
+    rbp units are ready, with 8 more well on the way
+    rbp is brilliant, but I like rbp do you know de wey
+
+    What the hell happened here? 1. a register (exact lower-case name) of an allowed size?
+    rax is brilliant, but I like r13
+    bitconneeeeeeect rax 15
+    who would win? rax or 0 (anaClsReg edition)
+    return to monke uauaaauaaaa
+    anaClsReg: rax wins
+    anaClsReg: 0 wins
+    rdi is brilliant, but I like rbx
+    rsi is brilliant, but I like rbp
+    anaRegIndex: whomst has summoned the almighty one
+    who would win? rax or 0 (anaClsRegFound edition)
+    anaClsRegFound: rax wins
+    stonks rax
+    rdi is brilliant, but I like rax
+    anaRegType: whomst has summoned the almighty one
+    not stonks rcx
+    What the hell happened here? rax = its type, rcx = its number. A register of a size that is not allowed is no register (xmm0, eax for push)
+    rdx is brilliant, but I like rax
+    bitconneeeeeeect rdx r13
+    who would win? rdx or 0 (anaClsRegOk edition)
+    return to monke uauaaauaaaa
+    anaClsRegOk: rdx wins
+    anaClsRegOk: 0 wins
+    rdx is brilliant, but I like r12
+    rdx units are ready, with 16 more well on the way
+    rdx do you know de wey is brilliant, but I like rax
+    rdx units are ready, with 8 more well on the way
+    rdx do you know de wey is brilliant, but I like rcx
+    return to monke uauaaauauua
+
+    What the hell happened here? 2. a decimal number? (one that does not fit into 64 bits is an error right away)
+    monke uauaaauaaaa
+    anaClsRegFound: 0 wins
+    rax is brilliant, but I like r13
+    bitconneeeeeeect rax 16
+    who would win? rax or 0 (anaClsDec edition)
+    return to monke uauaaauaaau
+    anaClsDec: rax wins
+    anaClsDec: 0 wins
+    rdi is brilliant, but I like rbx
+    rsi is brilliant, but I like rbp
+    anaParseDecimal: whomst has summoned the almighty one
+    who would win? rax or 1 (anaClsDecOk edition)
+    rcx is brilliant, but I like r12
+    rcx units are ready, with 16 more well on the way
+    rax is brilliant, but I like 16
+    rcx do you know de wey is brilliant, but I like rax
+    rcx units are ready, with 8 more well on the way
+    rcx do you know de wey is brilliant, but I like rdx
+    return to monke uauaaauauua
+    What the hell happened here? status 0: no decimal number
+    anaClsDecOk: 1 wins
+    return to monke uauaaauaaau
+    What the hell happened here? status 2: does not fit into 64 Bits
+    anaClsDecOk: rax wins
+    return to monke uauaaauauau
+
+    What the hell happened here? 3. a character?
+    monke uauaaauaaau
+    rax is brilliant, but I like r13
+    bitconneeeeeeect rax 32
+    who would win? rax or 0 (anaClsChr edition)
+    return to monke uauaaauaaua
+    anaClsChr: rax wins
+    anaClsChr: 0 wins
+    rdi is brilliant, but I like r12
+    anaParseChar: whomst has summoned the almighty one
+    who would win? rax or 0 (anaClsChrOk edition)
+    return to monke uauaaauaaua
+    anaClsChrOk: rax wins
+    anaClsChrOk: 0 wins
+    return to monke uauaaauauua
+
+    What the hell happened here? 4. a monke jump marker name?
+    monke uauaaauaaua
+    rax is brilliant, but I like r13
+    bitconneeeeeeect rax 64
+    who would win? rax or 0 (anaClsMonke edition)
+    return to monke uauaaauaauu
+    anaClsMonke: rax wins
+    anaClsMonke: 0 wins
+    rdi is brilliant, but I like rbx
+    rsi is brilliant, but I like rbp
+    anaIsMonke: whomst has summoned the almighty one
+    who would win? rax or 0 (anaClsMonkeOk edition)
+    return to monke uauaaauaauu
+    anaClsMonkeOk: rax wins
+    anaClsMonkeOk: 0 wins
+    rcx is brilliant, but I like r12
+    rcx units are ready, with 16 more well on the way
+    rax is brilliant, but I like 64
+    rcx do you know de wey is brilliant, but I like rax
+    return to monke uauaaauauua
+
+    What the hell happened here? 5. a function name? (not empty, not starting with a digit)
+    monke uauaaauaauu
+    rax is brilliant, but I like r13
+    bitconneeeeeeect rax 128
+    who would win? rax or 0 (anaClsFunc edition)
+    return to monke uauaaauauaa
+    anaClsFunc: rax wins
+    anaClsFunc: 0 wins
+    rdi is brilliant, but I like rbx
+    rsi is brilliant, but I like rbp
+    rdx is brilliant, but I like 1
+    anaIsName: whomst has summoned the almighty one
+    who would win? rax or 0 (anaClsFuncOk edition)
+    return to monke uauaaauauaa
+    anaClsFuncOk: rax wins
+    anaClsFuncOk: 0 wins
+    rcx is brilliant, but I like r12
+    rcx units are ready, with 16 more well on the way
+    rax is brilliant, but I like 128
+    rcx do you know de wey is brilliant, but I like rax
+    return to monke uauaaauauua
+
+    What the hell happened here? 6. a comparison label? (like a function name, but it may start with a digit)
+    monke uauaaauauaa
+    rax is brilliant, but I like r13
+    bitconneeeeeeect rax 256
+    who would win? rax or 0 (anaClsLabel edition)
+    return to monke uauaaauauau
+    anaClsLabel: rax wins
+    anaClsLabel: 0 wins
+    rdi is brilliant, but I like rbx
+    rsi is brilliant, but I like rbp
+    rdx is brilliant, but I like 0
+    anaIsName: whomst has summoned the almighty one
+    who would win? rax or 0 (anaClsLabelOk edition)
+    return to monke uauaaauauau
+    anaClsLabelOk: rax wins
+    anaClsLabelOk: 0 wins
+    rcx is brilliant, but I like r12
+    rcx units are ready, with 16 more well on the way
+    rax is brilliant, but I like 256
+    rcx do you know de wey is brilliant, but I like rax
+    return to monke uauaaauauua
+
+    What the hell happened here? "invalid parameter provided"
+    monke uauaaauauau
+    libFail: whomst has summoned the almighty one
+
+    monke uauaaauauua
+    not stonks r13
+    not stonks r12
+    not stonks rbp
+    not stonks rbx
+    right back at ya, buckaroo
+
+
+What the hell happened here? anaRegIndex(rdi = text, rsi = length) -> rax = the register number (0..67), or -1 if the text is no register name
+I like to have fun, fun, fun, fun, fun, fun, fun, fun, fun, fun anaRegIndex
+    anaPack: whomst has summoned the almighty one
+    rdi is brilliant, but I like rax
+    rsi is brilliant, but I like r15
+    rsi units are ready, with 1024 more well on the way
+    rsi is brilliant, but I like rsi do you know de wey
+    rdx is brilliant, but I like 68
+    anaLookup: whomst has summoned the almighty one
+    right back at ya, buckaroo
+
+
+What the hell happened here? anaRegType(rdi = register number) -> rax = its PARAM_* type: 0-15 REG64, 16-31 REG32, 32-47 REG16, 48-67 REG8
+I like to have fun, fun, fun, fun, fun, fun, fun, fun, fun, fun anaRegType
+    rax is brilliant, but I like 1
+    who would win? rdi or 15 (anaRegType64 edition)
+    anaRegType64: 15 wins
+    right back at ya, buckaroo
+    anaRegType64: rdi wins
+    rax is brilliant, but I like 2
+    who would win? rdi or 31 (anaRegType32 edition)
+    anaRegType32: 31 wins
+    right back at ya, buckaroo
+    anaRegType32: rdi wins
+    rax is brilliant, but I like 4
+    who would win? rdi or 47 (anaRegType16 edition)
+    anaRegType16: 47 wins
+    right back at ya, buckaroo
+    anaRegType16: rdi wins
+    rax is brilliant, but I like 8
+    right back at ya, buckaroo
+
+
+What the hell happened here? anaPack(rdi = text, rsi = length) -> rax = the text as a number (first byte = lowest byte), 0 if it is empty,
+What the hell happened here? longer than 5 bytes or contains a NUL byte. Every name of the tables packs to a different number that is not 0.
+What the hell happened here? Monke labels: uauaaua|aaaa = next byte (from the last one down), aaau = no such name
+I like to have fun, fun, fun, fun, fun, fun, fun, fun, fun, fun anaPack
+    rax is brilliant, but I like 0
+    who would win? rsi or 5 (anaPackLong edition)
+    anaPackLong: 5 wins
+    rdi units are ready, with rsi more well on the way
+
+    monke uauaauaaaaa
+    who would win? rsi or 0 (anaPackMore edition)
+    right back at ya, buckaroo
+    anaPackMore: rsi wins
+    anaPackMore: 0 wins
+    downvote rdi
+    downvote rsi
+    sneak 100 rcx
+    cl is brilliant, but I like rdi do you know de wey
+    who would win? rcx or 0 (anaPackNul edition)
+    return to monke uauaauaaaau
+    anaPackNul: rcx wins
+    anaPackNul: 0 wins
+    rax is getting out of hand, now there are 256 of them
+    rax units are ready, with rcx more well on the way
+    return to monke uauaauaaaaa
+
+    anaPackLong: rsi wins
+    monke uauaauaaaau
+    rax is brilliant, but I like 0
+    right back at ya, buckaroo
+
+
+What the hell happened here? anaLookup(rdi = key, rsi = table, rdx = number of entries) -> rax = index of the key in the table, or -1
+What the hell happened here? Monke labels: uauaauu|aaaa = next entry, aaau = not found
+I like to have fun, fun, fun, fun, fun, fun, fun, fun, fun, fun anaLookup
+    rax is brilliant, but I like 0
+    monke uauaauuaaaa
+    who would win? rax or rdx (anaLookEnd edition)
+    return to monke uauaauuaaau
+    anaLookEnd: rax wins
+    anaLookEnd: rdx wins
+    rcx is brilliant, but I like rsi do you know de wey
+    who would win? rcx or rdi (anaLookHit edition)
+    right back at ya, buckaroo
+    anaLookHit: rcx wins
+    anaLookHit: rdi wins
+    upvote rax
+    rsi units are ready, with 8 more well on the way
+    return to monke uauaauuaaaa
+
+    monke uauaauuaaau
+    rax is brilliant, but I like -1
+    right back at ya, buckaroo
+
+
+What the hell happened here? anaParseDecimal(rdi = text, rsi = length) -> rax = 0: no decimal number, 1: a decimal number, its value in rdx,
+What the hell happened here? 2: a decimal number that does not fit into 64 bits. Like parse_decimal: the empty text is 0; otherwise leading
+What the hell happened here? ASCII whitespace (space, tab, LF, FF, CR), an optional sign and at least one digit, nothing else.
+What the hell happened here? The value is built up as a negative number in r9 (i64::MIN has no positive counterpart), r8 = 1 if negative.
+What the hell happened here? Monke labels: uauauaa|aaaa = skip whitespace, aaau = skip this byte, aaua = sign, aauu = skip the sign,
+What the hell happened here?               auaa = digits, auau = check next digit, auua = accumulate, auuu = next digit,
+What the hell happened here?               uaaa = apply the sign, uaau = no decimal number, uaua = too large
+I like to have fun, fun, fun, fun, fun, fun, fun, fun, fun, fun anaParseDecimal
+    rdx is brilliant, but I like 0
+    rax is brilliant, but I like 1
+    who would win? rsi or 0 (anaDecEmpty edition)
+    right back at ya, buckaroo
+    anaDecEmpty: rsi wins
+    anaDecEmpty: 0 wins
+
+    What the hell happened here? skip leading whitespace (trim_ascii_start)
+    monke uauauaaaaaa
+    who would win? rsi or 0 (anaDecWsEnd edition)
+    return to monke uauauaauaau
+    anaDecWsEnd: rsi wins
+    anaDecWsEnd: 0 wins
+    sneak 100 rcx
+    cl is brilliant, but I like rdi do you know de wey
+    who would win? rcx or 32 (anaDecWs32 edition)
+    return to monke uauauaaaaau
+    anaDecWs32: rcx wins
+    anaDecWs32: 32 wins
+    who would win? rcx or 9 (anaDecWs9 edition)
+    return to monke uauauaaaaau
+    anaDecWs9: rcx wins
+    anaDecWs9: 9 wins
+    who would win? rcx or 10 (anaDecWs10 edition)
+    return to monke uauauaaaaau
+    anaDecWs10: rcx wins
+    anaDecWs10: 10 wins
+    who would win? rcx or 12 (anaDecWs12 edition)
+    return to monke uauauaaaaau
+    anaDecWs12: rcx wins
+    anaDecWs12: 12 wins
+    who would win? rcx or 13 (anaDecWs13 edition)
+    return to monke uauauaaaaau
+    anaDecWs13: rcx wins
+    anaDecWs13: 13 wins
+    return to monke uauauaaaaua
+    monke uauauaaaaau
+    upvote rdi
+    downvote rsi
+    return to monke uauauaaaaaa
+
+    What the hell happened here? one optional sign (rcx = the first byte after the whitespace)
+    monke uauauaaaaua
+    r8 is brilliant, but I like 0
+    who would win? rcx or 45 (anaDecMinus edition)
+    r8 is brilliant, but I like 1
+    return to monke uauauaaaauu
+    anaDecMinus: rcx wins
+    anaDecMinus: 45 wins
+    who would win? rcx or 43 (anaDecPlus edition)
+    return to monke uauauaaaauu
+    anaDecPlus: rcx wins
+    anaDecPlus: 43 wins
+    return to monke uauauaaauaa
+    monke uauauaaaauu
+    upvote rdi
+    downvote rsi
+
+    What the hell happened here? at least one digit, and only digits
+    monke uauauaaauaa
+    who would win? rsi or 0 (anaDecNoDigits edition)
+    return to monke uauauaauaau
+    anaDecNoDigits: rsi wins
+    anaDecNoDigits: 0 wins
+    r10 is brilliant, but I like rdi
+    r11 is brilliant, but I like rsi
+    monke uauauaaauau
+    who would win? r11 or 0 (anaDecChkEnd edition)
+    return to monke uauauaaauua
+    anaDecChkEnd: r11 wins
+    anaDecChkEnd: 0 wins
+    sneak 100 rcx
+    cl is brilliant, but I like r10 do you know de wey
+    who would win? rcx or 48 (anaDecLow edition)
+    anaDecLow: rcx wins
+    who would win? rcx or 57 (anaDecHigh edition)
+    anaDecHigh: 57 wins
+    upvote r10
+    downvote r11
+    return to monke uauauaaauau
+
+    What the hell happened here? r9 = -(the digits), overflow if it goes below i64::MIN
+    monke uauauaaauua
+    r9 is brilliant, but I like 0
+    monke uauauaaauuu
+    who would win? rsi or 0 (anaDecAccEnd edition)
+    return to monke uauauaauaaa
+    anaDecAccEnd: rsi wins
+    anaDecAccEnd: 0 wins
+    sneak 100 rcx
+    cl is brilliant, but I like rdi do you know de wey
+    parry 48 you filthy casual rcx
+    What the hell happened here? r9 * 10 must not go below i64::MIN: r9 >= -922337203685477580
+    r10 is brilliant, but I like -922337203685477580
+    who would win? r9 or r10 (anaDecOv1 edition)
+    anaDecOv1: r9 wins
+    r9 is getting out of hand, now there are 10 of them
+    What the hell happened here? r9 - digit must not go below i64::MIN: r9 >= i64::MIN + digit
+    r10 is brilliant, but I like -9223372036854775808
+    r10 units are ready, with rcx more well on the way
+    who would win? r9 or r10 (anaDecOv2 edition)
+    anaDecOv2: r9 wins
+    parry rcx you filthy casual r9
+    upvote rdi
+    downvote rsi
+    return to monke uauauaaauuu
+
+    What the hell happened here? positive: the value is -r9, which does not exist for i64::MIN
+    monke uauauaauaaa
+    rax is brilliant, but I like 1
+    rdx is brilliant, but I like r9
+    who would win? r8 or 0 (anaDecNeg edition)
+    r10 is brilliant, but I like -9223372036854775808
+    who would win? r9 or r10 (anaDecPosOv edition)
+    return to monke uauauaauaua
+    anaDecPosOv: r9 wins
+    anaDecPosOv: r10 wins
+    rdx is brilliant, but I like 0
+    parry r9 you filthy casual rdx
+    anaDecNeg: r8 wins
+    anaDecNeg: 0 wins
+    right back at ya, buckaroo
+
+    monke uauauaauaau
+    anaDecLow: 48 wins
+    anaDecHigh: rcx wins
+    rax is brilliant, but I like 0
+    right back at ya, buckaroo
+
+    monke uauauaauaua
+    anaDecOv1: r10 wins
+    anaDecOv2: r10 wins
+    rax is brilliant, but I like 2
+    right back at ya, buckaroo
+
+
+What the hell happened here? anaParseChar(rdi = parameter) -> rax = 1 if it is a character (as_char: an escape sequence, a single byte, or an
+What the hell happened here? ASCII code 0..255; TYPE, VALUE, VERBATIM and ESCAPE are set then), else 0.
+What the hell happened here? VERBATIM = 0 for \v (gas has no \v escape), for a lone backslash (gas reads an escaped quote) and for ASCII codes
+What the hell happened here? whose digits (after one sign) start with a 0 and are more than one (gas reads octal).
+What the hell happened here? r12 = parameter, rbx = text, r13 = length
+What the hell happened here? Monke labels: uauauau|aaaa = yes, aaau = no, aaua = return, aauu = skip the sign, auaa = digits, auau = store VERBATIM
+I like to have fun, fun, fun, fun, fun, fun, fun, fun, fun, fun anaParseChar
+    stonks rbx
+    stonks r12
+    stonks r13
+    r12 is brilliant, but I like rdi
+    rbx is brilliant, but I like r12 do you know de wey
+    r13 is brilliant, but I like r12
+    r13 units are ready, with 8 more well on the way
+    r13 is brilliant, but I like r13 do you know de wey
+
+    What the hell happened here? an escape sequence?
+    rdi is brilliant, but I like rbx
+    rsi is brilliant, but I like r13
+    anaPack: whomst has summoned the almighty one
+    rdi is brilliant, but I like rax
+    rsi is brilliant, but I like r15
+    rsi units are ready, with 1032 more well on the way
+    rsi is brilliant, but I like rsi do you know de wey
+    rdx is brilliant, but I like 10
+    anaLookup: whomst has summoned the almighty one
+    who would win? rax or 0 (anaChrEsc edition)
+    anaChrEsc: rax wins
+    What the hell happened here? VALUE = ANA_ESCVALS[index]
+    rcx is brilliant, but I like r15
+    rcx units are ready, with 1040 more well on the way
+    rcx is brilliant, but I like rcx do you know de wey
+    rdx is brilliant, but I like rax
+    rdx is getting out of hand, now there are 8 of them
+    rdx units are ready, with rcx more well on the way
+    rdx is brilliant, but I like rdx do you know de wey
+    rcx is brilliant, but I like r12
+    rcx units are ready, with 24 more well on the way
+    rcx do you know de wey is brilliant, but I like rdx
+    What the hell happened here? ESCAPE = index + 1
+    rdx is brilliant, but I like rax
+    upvote rdx
+    rcx is brilliant, but I like r12
+    rcx units are ready, with 40 more well on the way
+    rcx do you know de wey is brilliant, but I like rdx
+    What the hell happened here? VERBATIM = 1, but 0 for \v (index 6)
+    rdx is brilliant, but I like 1
+    who would win? rax or 6 (anaChrV edition)
+    rdx is brilliant, but I like 0
+    anaChrV: rax wins
+    anaChrV: 6 wins
+    rcx is brilliant, but I like r12
+    rcx units are ready, with 32 more well on the way
+    rcx do you know de wey is brilliant, but I like rdx
+    return to monke uauauauaaaa
+
+    What the hell happened here? a single byte? VALUE = the byte, VERBATIM = 1, but 0 for a backslash (92)
+    anaChrEsc: 0 wins
+    who would win? r13 or 1 (anaChrOne edition)
+    sneak 100 rdx
+    dl is brilliant, but I like rbx do you know de wey
+    rcx is brilliant, but I like r12
+    rcx units are ready, with 24 more well on the way
+    rcx do you know de wey is brilliant, but I like rdx
+    rax is brilliant, but I like 1
+    who would win? rdx or 92 (anaChrBs edition)
+    rax is brilliant, but I like 0
+    anaChrBs: rdx wins
+    anaChrBs: 92 wins
+    rcx is brilliant, but I like r12
+    rcx units are ready, with 32 more well on the way
+    rcx do you know de wey is brilliant, but I like rax
+    return to monke uauauauaaaa
+    anaChrOne: r13 wins
+    anaChrOne: 1 wins
+
+    What the hell happened here? an ASCII code from 0 to 255?
+    rdi is brilliant, but I like rbx
+    rsi is brilliant, but I like r13
+    anaParseDecimal: whomst has summoned the almighty one
+    who would win? rax or 1 (anaChrCode edition)
+    who would win? rdx or 0 (anaChrNeg edition)
+    anaChrNeg: rdx wins
+    who would win? rdx or 255 (anaChrBig edition)
+    anaChrBig: 255 wins
+    rcx is brilliant, but I like r12
+    rcx units are ready, with 24 more well on the way
+    rcx do you know de wey is brilliant, but I like rdx
+    What the hell happened here? the digits: the text without one leading - or + (rcx = start, r8 = length)
+    rcx is brilliant, but I like rbx
+    r8 is brilliant, but I like r13
+    What the hell happened here? the empty text (the number 0) has no first byte to look at
+    who would win? r8 or 0 (anaChrEmpty edition)
+    return to monke uauauauauaa
+    anaChrEmpty: r8 wins
+    anaChrEmpty: 0 wins
+    sneak 100 rax
+    al is brilliant, but I like rcx do you know de wey
+    who would win? rax or 45 (anaChrMinus edition)
+    return to monke uauauauaauu
+    anaChrMinus: rax wins
+    anaChrMinus: 45 wins
+    who would win? rax or 43 (anaChrPlus edition)
+    return to monke uauauauaauu
+    anaChrPlus: rax wins
+    anaChrPlus: 43 wins
+    return to monke uauauauauaa
+    monke uauauauaauu
+    upvote rcx
+    downvote r8
+    monke uauauauauaa
+    rdx is brilliant, but I like 1
+    who would win? r8 or 1 (anaChrLong edition)
+    anaChrLong: 1 wins
+    return to monke uauauauauau
+    anaChrLong: r8 wins
+    sneak 100 rax
+    al is brilliant, but I like rcx do you know de wey
+    who would win? rax or 48 (anaChrZero edition)
+    rdx is brilliant, but I like 0
+    anaChrZero: rax wins
+    anaChrZero: 48 wins
+    monke uauauauauau
+    rcx is brilliant, but I like r12
+    rcx units are ready, with 32 more well on the way
+    rcx do you know de wey is brilliant, but I like rdx
+    return to monke uauauauaaaa
+
+    monke uauauauaaau
+    anaChrCode: rax wins
+    anaChrCode: 1 wins
+    anaChrNeg: 0 wins
+    anaChrBig: rdx wins
+    rax is brilliant, but I like 0
+    return to monke uauauauaaua
+
+    What the hell happened here? TYPE = CHAR
+    monke uauauauaaaa
+    rcx is brilliant, but I like r12
+    rcx units are ready, with 16 more well on the way
+    rax is brilliant, but I like 32
+    rcx do you know de wey is brilliant, but I like rax
+    rax is brilliant, but I like 1
+
+    monke uauauauaaua
+    not stonks r13
+    not stonks r12
+    not stonks rbx
+    right back at ya, buckaroo
+
+
+What the hell happened here? anaIsMonke(rdi = text, rsi = length) -> rax = 1 if it consists of a and u only, with at least one of each
+What the hell happened here? r8 = seen an a, r9 = seen a u
+What the hell happened here? Monke labels: uauauua|aaaa = next byte, aaau = byte ok, aaua = end of the text
+I like to have fun, fun, fun, fun, fun, fun, fun, fun, fun, fun anaIsMonke
+    r8 is brilliant, but I like 0
+    r9 is brilliant, but I like 0
+    monke uauauuaaaaa
+    who would win? rsi or 0 (anaMonkeEnd edition)
+    return to monke uauauuaaaua
+    anaMonkeEnd: rsi wins
+    anaMonkeEnd: 0 wins
+    sneak 100 rcx
+    cl is brilliant, but I like rdi do you know de wey
+    who would win? rcx or 97 (anaMonkeA edition)
+    r8 is brilliant, but I like 1
+    return to monke uauauuaaaau
+    anaMonkeA: rcx wins
+    anaMonkeA: 97 wins
+    who would win? rcx or 117 (anaMonkeU edition)
+    r9 is brilliant, but I like 1
+    return to monke uauauuaaaau
+    anaMonkeU: rcx wins
+    anaMonkeU: 117 wins
+    rax is brilliant, but I like 0
+    right back at ya, buckaroo
+    monke uauauuaaaau
+    upvote rdi
+    downvote rsi
+    return to monke uauauuaaaaa
+
+    monke uauauuaaaua
+    rax is brilliant, but I like r8
+    bitconneeeeeeect rax r9
+    right back at ya, buckaroo
+
+
+What the hell happened here? anaIsNameChar(rdi = byte) -> rax = 1 for an ASCII letter or digit, _, $ or .
+I like to have fun, fun, fun, fun, fun, fun, fun, fun, fun, fun anaIsNameChar
+    rax is brilliant, but I like 1
+    What the hell happened here? _ (95), $ (36) and . (46)
+    who would win? rdi or 95 (anaNcUnder edition)
+    right back at ya, buckaroo
+    anaNcUnder: rdi wins
+    anaNcUnder: 95 wins
+    who would win? rdi or 36 (anaNcDollar edition)
+    right back at ya, buckaroo
+    anaNcDollar: rdi wins
+    anaNcDollar: 36 wins
+    who would win? rdi or 46 (anaNcDot edition)
+    right back at ya, buckaroo
+    anaNcDot: rdi wins
+    anaNcDot: 46 wins
+    What the hell happened here? digits 48..57
+    who would win? rdi or 48 (anaNcDigitLow edition)
+    anaNcDigitLow: rdi wins
+    who would win? rdi or 57 (anaNcDigitHigh edition)
+    anaNcDigitHigh: 57 wins
+    right back at ya, buckaroo
+    anaNcDigitLow: 48 wins
+    anaNcDigitHigh: rdi wins
+    What the hell happened here? upper case letters 65..90
+    who would win? rdi or 65 (anaNcUpperLow edition)
+    anaNcUpperLow: rdi wins
+    who would win? rdi or 90 (anaNcUpperHigh edition)
+    anaNcUpperHigh: 90 wins
+    right back at ya, buckaroo
+    anaNcUpperLow: 65 wins
+    anaNcUpperHigh: rdi wins
+    What the hell happened here? lower case letters 97..122
+    who would win? rdi or 97 (anaNcLowerLow edition)
+    anaNcLowerLow: rdi wins
+    who would win? rdi or 122 (anaNcLowerHigh edition)
+    anaNcLowerHigh: 122 wins
+    right back at ya, buckaroo
+    anaNcLowerLow: 97 wins
+    anaNcLowerHigh: rdi wins
+    rax is brilliant, but I like 0
+    right back at ya, buckaroo
+
+
+What the hell happened here? anaIsName(rdi = text, rsi = length, rdx = 1 if it must not start with a digit) -> rax = 1 if it is a
+What the hell happened here? function name (rdx = 1) or a comparison label (rdx = 0): not empty, only ASCII letters, digits, _, $ and .
+What the hell happened here? rbx = text, r12 = length
+What the hell happened here? Monke labels: uauauuu|aaaa = next byte, aaau = no, aaua = return
+I like to have fun, fun, fun, fun, fun, fun, fun, fun, fun, fun anaIsName
+    stonks rbx
+    stonks r12
+    rbx is brilliant, but I like rdi
+    r12 is brilliant, but I like rsi
+    who would win? r12 or 0 (anaNameEmpty edition)
+    return to monke uauauuuaaau
+    anaNameEmpty: r12 wins
+    anaNameEmpty: 0 wins
+    who would win? rdx or 0 (anaNameFirst edition)
+    return to monke uauauuuaaaa
+    anaNameFirst: rdx wins
+    anaNameFirst: 0 wins
+    sneak 100 rcx
+    cl is brilliant, but I like rbx do you know de wey
+    who would win? rcx or 48 (anaNameDigitLow edition)
+    anaNameDigitLow: rcx wins
+    who would win? rcx or 57 (anaNameDigitHigh edition)
+    anaNameDigitHigh: 57 wins
+    return to monke uauauuuaaau
+    anaNameDigitLow: 48 wins
+    anaNameDigitHigh: rcx wins
+
+    monke uauauuuaaaa
+    rax is brilliant, but I like 1
+    who would win? r12 or 0 (anaNameEnd edition)
+    return to monke uauauuuaaua
+    anaNameEnd: r12 wins
+    anaNameEnd: 0 wins
+    sneak 100 rdi
+    dil is brilliant, but I like rbx do you know de wey
+    anaIsNameChar: whomst has summoned the almighty one
+    who would win? rax or 0 (anaNameChar edition)
+    return to monke uauauuuaaau
+    anaNameChar: rax wins
+    anaNameChar: 0 wins
+    upvote rbx
+    downvote r12
+    return to monke uauauuuaaaa
+
+    monke uauauuuaaau
+    rax is brilliant, but I like 0
+    monke uauauuuaaua
+    not stonks r12
+    not stonks rbx
+    right back at ya, buckaroo
+
+
+What the hell happened here? ==================================================================
+What the hell happened here? Part 2: the checks of one command (check_combination and check_encodable in parameters.rs)
+What the hell happened here? ==================================================================
+
+What the hell happened here? anaCheckCommand(rdi = record) - all checks of a command whose parameters are classified
+What the hell happened here? rbx = record, r12 = ANA_TYPES[opcode], r13 = POINTER, r14 = opcode
+What the hell happened here? Monke labels: uauuaaa|aaaa = encodability, aaau = pointer mask bit in rax, aaua = fail, aauu = return
+I like to have fun, fun, fun, fun, fun, fun, fun, fun, fun, fun anaCheckCommand
+    stonks rbx
+    stonks rbp
+    stonks r12
+    stonks r13
+    stonks r14
+    rbx is brilliant, but I like rdi
+    r14 is brilliant, but I like rbx do you know de wey
+    r13 is brilliant, but I like rbx
+    r13 units are ready, with 16 more well on the way
+    r13 is brilliant, but I like r13 do you know de wey
+    rax is brilliant, but I like r14
+    rax is getting out of hand, now there are 8 of them
+    rcx is brilliant, but I like r15
+    rcx units are ready, with 1048 more well on the way
+    rcx is brilliant, but I like rcx do you know de wey
+    rax units are ready, with rcx more well on the way
+    r12 is brilliant, but I like rax do you know de wey
+
+    What the hell happened here? has_two_operands: parameter 0 may be a register and parameter 1 a register or an immediate
+    rax is brilliant, but I like r12
+    bitconneeeeeeect rax 15
+    who would win? rax or 0 (anaCmdTwoA edition)
+    return to monke uauuaaaaaaa
+    anaCmdTwoA: rax wins
+    anaCmdTwoA: 0 wins
+    rax is brilliant, but I like r12
+    look at what 512 needs to mimic a fraction of rax
+    bitconneeeeeeect rax 63
+    who would win? rax or 0 (anaCmdTwoB edition)
+    return to monke uauuaaaaaaa
+    anaCmdTwoB: rax wins
+    anaCmdTwoB: 0 wins
+    rdi is brilliant, but I like rbx
+    rsi is brilliant, but I like r14
+    anaCheckFits: whomst has summoned the almighty one
+    rdi is brilliant, but I like rbx
+    anaCheckSizes: whomst has summoned the almighty one
+
+    What the hell happened here? a pointer must be a 64 or 32 bit register, and the command must be able to use it there (pointer_use:
+    What the hell happened here? Sized or Implicit; Unsupported and NeedsSize are errors)
+    monke uauuaaaaaaa
+    who would win? r13 or 0 (anaCmdPtr edition)
+    anaCmdPtr: r13 wins
+    rax is brilliant, but I like r13
+    rax is getting out of hand, now there are 64 of them
+    rax units are ready, with rbx more well on the way
+    rax units are ready, with 80 more well on the way
+    rax is brilliant, but I like rax do you know de wey
+    who would win? rax or 2 (anaCmdBase edition)
+    anaCmdBase: 2 wins
+    rax is brilliant, but I like r12
+    look at what 134217728 needs to mimic a fraction of rax
+    who would win? r13 or 0 (anaCmdP0 edition)
+    bitconneeeeeeect rax 1
+    return to monke uauuaaaaaau
+    anaCmdP0: r13 wins
+    anaCmdP0: 0 wins
+    who would win? r13 or 1 (anaCmdP1 edition)
+    bitconneeeeeeect rax 2
+    return to monke uauuaaaaaau
+    anaCmdP1: r13 wins
+    anaCmdP1: 1 wins
+    return to monke uauuaaaaaua
+    monke uauuaaaaaau
+    who would win? rax or 0 (anaCmdPtrOk edition)
+    return to monke uauuaaaaaua
+    anaCmdPtrOk: rax wins
+    anaCmdPtrOk: 0 wins
+    anaCmdPtr: 0 wins
+
+    What the hell happened here? push only takes sign-extended 32 bit immediates
+    who would win? r14 or 5 (anaCmdPush edition)
+    rax is brilliant, but I like rbx
+    rax units are ready, with 80 more well on the way
+    rax is brilliant, but I like rax do you know de wey
+    who would win? rax or 16 (anaCmdPushDec edition)
+    rax is brilliant, but I like rbx
+    rax units are ready, with 88 more well on the way
+    rax is brilliant, but I like rax do you know de wey
+    who would win? rax or 2147483647 (anaCmdPushHigh edition)
+    anaCmdPushHigh: 2147483647 wins
+    who would win? rax or -2147483648 (anaCmdPushLow edition)
+    anaCmdPushLow: rax wins
+    anaCmdPush: r14 wins
+    anaCmdPush: 5 wins
+    anaCmdPushDec: rax wins
+    anaCmdPushDec: 16 wins
+    return to monke uauuaaaaauu
+
+    monke uauuaaaaaua
+    anaCmdBase: rax wins
+    anaCmdPushHigh: rax wins
+    anaCmdPushLow: -2147483648 wins
+    libFail: whomst has summoned the almighty one
+
+    monke uauuaaaaauu
+    not stonks r14
+    not stonks r13
+    not stonks r12
+    not stonks rbp
+    not stonks rbx
+    right back at ya, buckaroo
+
+
+What the hell happened here? anaCheckFits(rdi = record, rsi = opcode) - check_combination rules 1 and 2: a decimal number combined with a
+What the hell happened here? register must fit into it (bits_needed: -128..255 for 8 bits, -32768..65535 for 16, -2^31..2^32-1 for 32), and
+What the hell happened here? with a 64 bit register every command but mov needs a sign-extended 32 bit number.
+What the hell happened here? r8 = t0, r9 = t1, r10 = the number, r11 = the register type, rdx..rcx = the allowed range
+What the hell happened here? Monke labels: uauuaau|aaaa = try decimal as parameter 1, aaau = check r10 against r11, aaua = range check
+I like to have fun, fun, fun, fun, fun, fun, fun, fun, fun, fun anaCheckFits
+    r8 is brilliant, but I like rdi
+    r8 units are ready, with 80 more well on the way
+    r8 is brilliant, but I like r8 do you know de wey
+    r9 is brilliant, but I like rdi
+    r9 units are ready, with 144 more well on the way
+    r9 is brilliant, but I like r9 do you know de wey
+
+    What the hell happened here? decimal number, register?
+    who would win? r8 or 16 (anaFitsDec0 edition)
+    rcx is brilliant, but I like r9
+    bitconneeeeeeect rcx 15
+    who would win? rcx or 0 (anaFitsReg1 edition)
+    return to monke uauuaauaaaa
+    anaFitsReg1: rcx wins
+    anaFitsReg1: 0 wins
+    r10 is brilliant, but I like rdi
+    r10 units are ready, with 88 more well on the way
+    r10 is brilliant, but I like r10 do you know de wey
+    r11 is brilliant, but I like r9
+    return to monke uauuaauaaau
+
+    What the hell happened here? register, decimal number?
+    monke uauuaauaaaa
+    anaFitsDec0: r8 wins
+    anaFitsDec0: 16 wins
+    who would win? r9 or 16 (anaFitsDec1 edition)
+    rcx is brilliant, but I like r8
+    bitconneeeeeeect rcx 15
+    who would win? rcx or 0 (anaFitsReg0 edition)
+    right back at ya, buckaroo
+    anaFitsReg0: rcx wins
+    anaFitsReg0: 0 wins
+    r10 is brilliant, but I like rdi
+    r10 units are ready, with 152 more well on the way
+    r10 is brilliant, but I like r10 do you know de wey
+    r11 is brilliant, but I like r8
+
+    monke uauuaauaaau
+    who would win? r11 or 8 (anaFits8 edition)
+    rdx is brilliant, but I like -128
+    rcx is brilliant, but I like 255
+    return to monke uauuaauaaua
+    anaFits8: r11 wins
+    anaFits8: 8 wins
+    who would win? r11 or 4 (anaFits16 edition)
+    rdx is brilliant, but I like -32768
+    rcx is brilliant, but I like 65535
+    return to monke uauuaauaaua
+    anaFits16: r11 wins
+    anaFits16: 4 wins
+    who would win? r11 or 2 (anaFits32 edition)
+    rdx is brilliant, but I like -2147483648
+    rcx is brilliant, but I like 4294967295
+    return to monke uauuaauaaua
+    anaFits32: r11 wins
+    anaFits32: 2 wins
+    What the hell happened here? 64 bits: every number fits for mov (opcode 10), the others need a sign-extended 32 bit number
+    who would win? rsi or 10 (anaFitsMov edition)
+    right back at ya, buckaroo
+    anaFitsMov: rsi wins
+    anaFitsMov: 10 wins
+    rdx is brilliant, but I like -2147483648
+    rcx is brilliant, but I like 2147483647
+
+    monke uauuaauaaua
+    who would win? r10 or rdx (anaFitsLow edition)
+    anaFitsLow: r10 wins
+    who would win? r10 or rcx (anaFitsHigh edition)
+    anaFitsHigh: rcx wins
+    right back at ya, buckaroo
+    anaFitsLow: rdx wins
+    anaFitsHigh: r10 wins
+    libFail: whomst has summoned the almighty one
+
+    What the hell happened here? no decimal number combined with a register
+    anaFitsDec1: r9 wins
+    anaFitsDec1: 16 wins
+    right back at ya, buckaroo
+
+
+What the hell happened here? anaCheckSizes(rdi = record) - check_combination rule 3 (two registers that are no pointers have the same size),
+What the hell happened here? rule 4 (the other operand of a pointer is a register) and the high byte conflict of check_encodable
+What the hell happened here? (ah, bh, ch, dh that is no pointer cannot be combined with a register that needs a REX prefix).
+What the hell happened here? rbx = record, r12 = t0, r13 = t1, r14 = POINTER
+What the hell happened here? Monke labels: uauuaua|aaaa = rule 4, aaau = fail, aaua = high byte as parameter 1, aauu = return
+I like to have fun, fun, fun, fun, fun, fun, fun, fun, fun, fun anaCheckSizes
+    stonks rbx
+    stonks r12
+    stonks r13
+    stonks r14
+    rbx is brilliant, but I like rdi
+    r12 is brilliant, but I like rbx
+    r12 units are ready, with 80 more well on the way
+    r12 is brilliant, but I like r12 do you know de wey
+    r13 is brilliant, but I like rbx
+    r13 units are ready, with 144 more well on the way
+    r13 is brilliant, but I like r13 do you know de wey
+    r14 is brilliant, but I like rbx
+    r14 units are ready, with 16 more well on the way
+    r14 is brilliant, but I like r14 do you know de wey
+
+    What the hell happened here? rule 3: "cannot combine registers of different size"
+    rax is brilliant, but I like r12
+    bitconneeeeeeect rax 15
+    who would win? rax or 0 (anaSzReg0 edition)
+    return to monke uauuauaaaaa
+    anaSzReg0: rax wins
+    anaSzReg0: 0 wins
+    who would win? r14 or 0 (anaSzPtr0 edition)
+    return to monke uauuauaaaaa
+    anaSzPtr0: r14 wins
+    anaSzPtr0: 0 wins
+    rax is brilliant, but I like r13
+    bitconneeeeeeect rax 15
+    who would win? rax or 0 (anaSzReg1 edition)
+    return to monke uauuauaaaaa
+    anaSzReg1: rax wins
+    anaSzReg1: 0 wins
+    who would win? r14 or 1 (anaSzPtr1 edition)
+    return to monke uauuauaaaaa
+    anaSzPtr1: r14 wins
+    anaSzPtr1: 1 wins
+    who would win? r12 or r13 (anaSzSame edition)
+    return to monke uauuauaaaaa
+    anaSzSame: r12 wins
+    anaSzSame: r13 wins
+    return to monke uauuauaaaau
+
+    What the hell happened here? rule 4: "operand size unknown" if the other operand of a pointer is no register
+    monke uauuauaaaaa
+    who would win? r14 or 0 (anaSzOther0 edition)
+    rax is brilliant, but I like r13
+    bitconneeeeeeect rax 15
+    who would win? rax or 0 (anaSzOther0Reg edition)
+    return to monke uauuauaaaau
+    anaSzOther0Reg: rax wins
+    anaSzOther0Reg: 0 wins
+    anaSzOther0: r14 wins
+    anaSzOther0: 0 wins
+    who would win? r14 or 1 (anaSzOther1 edition)
+    rax is brilliant, but I like r12
+    bitconneeeeeeect rax 15
+    who would win? rax or 0 (anaSzOther1Reg edition)
+    return to monke uauuauaaaau
+    anaSzOther1Reg: rax wins
+    anaSzOther1Reg: 0 wins
+    anaSzOther1: r14 wins
+    anaSzOther1: 1 wins
+
+    What the hell happened here? high byte register as parameter 0 (no pointer), REX register as parameter 1?
+    rdi is brilliant, but I like r12
+    rsi is brilliant, but I like rbx
+    rsi units are ready, with 88 more well on the way
+    rsi is brilliant, but I like rsi do you know de wey
+    anaIsHigh: whomst has summoned the almighty one
+    who would win? rax or 0 (anaSzHigh0 edition)
+    return to monke uauuauaaaua
+    anaSzHigh0: rax wins
+    anaSzHigh0: 0 wins
+    who would win? r14 or 0 (anaSzHigh0Ptr edition)
+    return to monke uauuauaaaua
+    anaSzHigh0Ptr: r14 wins
+    anaSzHigh0Ptr: 0 wins
+    rdi is brilliant, but I like r13
+    rsi is brilliant, but I like rbx
+    rsi units are ready, with 152 more well on the way
+    rsi is brilliant, but I like rsi do you know de wey
+    anaNeedsRex: whomst has summoned the almighty one
+    who would win? rax or 0 (anaSzRex1 edition)
+    return to monke uauuauaaaua
+    anaSzRex1: rax wins
+    anaSzRex1: 0 wins
+    return to monke uauuauaaaau
+
+    What the hell happened here? high byte register as parameter 1 (no pointer), REX register as parameter 0?
+    monke uauuauaaaua
+    rdi is brilliant, but I like r13
+    rsi is brilliant, but I like rbx
+    rsi units are ready, with 152 more well on the way
+    rsi is brilliant, but I like rsi do you know de wey
+    anaIsHigh: whomst has summoned the almighty one
+    who would win? rax or 0 (anaSzHigh1 edition)
+    return to monke uauuauaaauu
+    anaSzHigh1: rax wins
+    anaSzHigh1: 0 wins
+    who would win? r14 or 1 (anaSzHigh1Ptr edition)
+    return to monke uauuauaaauu
+    anaSzHigh1Ptr: r14 wins
+    anaSzHigh1Ptr: 1 wins
+    rdi is brilliant, but I like r12
+    rsi is brilliant, but I like rbx
+    rsi units are ready, with 88 more well on the way
+    rsi is brilliant, but I like rsi do you know de wey
+    anaNeedsRex: whomst has summoned the almighty one
+    who would win? rax or 0 (anaSzRex0 edition)
+    return to monke uauuauaaauu
+    anaSzRex0: rax wins
+    anaSzRex0: 0 wins
+
+    monke uauuauaaaau
+    libFail: whomst has summoned the almighty one
+
+    monke uauuauaaauu
+    not stonks r14
+    not stonks r13
+    not stonks r12
+    not stonks rbx
+    right back at ya, buckaroo
+
+
+What the hell happened here? anaIsHigh(rdi = type, rsi = value) -> rax = 1 for ah, bh, ch, dh (register numbers 49, 51, 53, 55)
+I like to have fun, fun, fun, fun, fun, fun, fun, fun, fun, fun anaIsHigh
+    rax is brilliant, but I like 0
+    who would win? rdi or 8 (anaHighType edition)
+    rax is brilliant, but I like 1
+    who would win? rsi or 49 (anaHighAh edition)
+    right back at ya, buckaroo
+    anaHighAh: rsi wins
+    anaHighAh: 49 wins
+    who would win? rsi or 51 (anaHighBh edition)
+    right back at ya, buckaroo
+    anaHighBh: rsi wins
+    anaHighBh: 51 wins
+    who would win? rsi or 53 (anaHighCh edition)
+    right back at ya, buckaroo
+    anaHighCh: rsi wins
+    anaHighCh: 53 wins
+    who would win? rsi or 55 (anaHighDh edition)
+    right back at ya, buckaroo
+    anaHighDh: rsi wins
+    anaHighDh: 55 wins
+    rax is brilliant, but I like 0
+    anaHighType: rdi wins
+    anaHighType: 8 wins
+    right back at ya, buckaroo
+
+
+What the hell happened here? anaNeedsRex(rdi = type, rsi = value) -> rax = 1 for a register that needs a REX prefix: r8-r15 of any size
+What the hell happened here? (numbers 8-15, 24-31, 40-47) and dil, sil, spl, bpl, r8b-r15b (56-67). 0 for anything that is no register.
+I like to have fun, fun, fun, fun, fun, fun, fun, fun, fun, fun anaNeedsRex
+    rax is brilliant, but I like 0
+    bitconneeeeeeect rdi 15
+    who would win? rdi or 0 (anaRexReg edition)
+    right back at ya, buckaroo
+    anaRexReg: rdi wins
+    anaRexReg: 0 wins
+    rax is brilliant, but I like 1
+    who would win? rsi or 55 (anaRexByte edition)
+    anaRexByte: 55 wins
+    rax is brilliant, but I like 0
+    who would win? rsi or 47 (anaRexWord edition)
+    anaRexWord: 47 wins
+    What the hell happened here? below 48: bit 3 of the number tells r8-r15
+    rax is brilliant, but I like rsi
+    bitconneeeeeeect rax 8
+    look at what 8 needs to mimic a fraction of rax
+    anaRexWord: rsi wins
+    anaRexByte: rsi wins
+    right back at ya, buckaroo
+
+
+What the hell happened here? ==================================================================
+What the hell happened here? Part 3: the labels (analyse_* in analyser/mod.rs, check_duplicate_definition and check_companions in helper.rs)
+What the hell happened here? Labels match by the text of the parameter (param_text): the source text, but for characters their text for
+What the hell happened here? gas, so that space and \s are the same label.
+What the hell happened here? ==================================================================
+
+What the hell happened here? anaCheckLabels() - every duplicate and companion check, for -S output (no main / call target checks)
+I like to have fun, fun, fun, fun, fun, fun, fun, fun, fun, fun anaCheckLabels
+    What the hell happened here? function names (FuncDef = 0) are defined once
+    rdi is brilliant, but I like 0
+    rsi is brilliant, but I like 1
+    anaCheckDuplicates: whomst has summoned the almighty one
+    What the hell happened here? one upgrade (20), one banana (22) and one they're the same picture (31) per file
+    rdi is brilliant, but I like 20
+    rsi is brilliant, but I like 0
+    anaCheckDuplicates: whomst has summoned the almighty one
+    rdi is brilliant, but I like 22
+    rsi is brilliant, but I like 0
+    anaCheckDuplicates: whomst has summoned the almighty one
+    rdi is brilliant, but I like 31
+    rsi is brilliant, but I like 0
+    anaCheckDuplicates: whomst has summoned the almighty one
+    What the hell happened here? monke markers (24) and wins labels (27) once per name, edition wins labels (29) once per edition and name
+    rdi is brilliant, but I like 24
+    rsi is brilliant, but I like 1
+    anaCheckDuplicates: whomst has summoned the almighty one
+    rdi is brilliant, but I like 27
+    rsi is brilliant, but I like 1
+    anaCheckDuplicates: whomst has summoned the almighty one
+    rdi is brilliant, but I like 29
+    rsi is brilliant, but I like 2
+    anaCheckDuplicates: whomst has summoned the almighty one
+
+    What the hell happened here? fuck go back (21) needs an upgrade (20), where banana (23) a banana (22), find the difference (30) the picture (31)
+    rdi is brilliant, but I like 21
+    rsi is brilliant, but I like 20
+    rdx is brilliant, but I like 0
+    rcx is brilliant, but I like 0
+    anaCheckCompanions: whomst has summoned the almighty one
+    rdi is brilliant, but I like 23
+    rsi is brilliant, but I like 22
+    rdx is brilliant, but I like 0
+    rcx is brilliant, but I like 0
+    anaCheckCompanions: whomst has summoned the almighty one
+    rdi is brilliant, but I like 30
+    rsi is brilliant, but I like 31
+    rdx is brilliant, but I like 0
+    rcx is brilliant, but I like 0
+    anaCheckCompanions: whomst has summoned the almighty one
+    What the hell happened here? return to monke (25) needs its monke (24)
+    rdi is brilliant, but I like 25
+    rsi is brilliant, but I like 24
+    rdx is brilliant, but I like 1
+    rcx is brilliant, but I like 0
+    anaCheckCompanions: whomst has summoned the almighty one
+    What the hell happened here? who would win (26) needs a wins label (27) for both parameters
+    rdi is brilliant, but I like 26
+    rsi is brilliant, but I like 27
+    rdx is brilliant, but I like 2
+    rcx is brilliant, but I like 0
+    anaCheckCompanions: whomst has summoned the almighty one
+    What the hell happened here? who would win with an edition (28) needs an edition wins label (29) of its edition for both parameters
+    rdi is brilliant, but I like 28
+    rsi is brilliant, but I like 29
+    rdx is brilliant, but I like 2
+    rcx is brilliant, but I like 1
+    anaCheckCompanions: whomst has summoned the almighty one
+    right back at ya, buckaroo
+
+
+What the hell happened here? anaCheckDuplicates(rdi = opcode, rsi = n) - fails if two commands with the opcode have the same first n
+What the hell happened here? parameters (n = 0: any two of them)
+What the hell happened here? rbx = opcode, rbp = n, r12 = first command, r13 = second command
+What the hell happened here? Monke labels: uauuuaa|aaaa = next first command, aaau = next second command, aaua = after the second,
+What the hell happened here?               aauu = after the first, auaa = fail, auau = return
+I like to have fun, fun, fun, fun, fun, fun, fun, fun, fun, fun anaCheckDuplicates
+    stonks rbx
+    stonks rbp
+    stonks r12
+    stonks r13
+    rbx is brilliant, but I like rdi
+    rbp is brilliant, but I like rsi
+    r12 is brilliant, but I like r15
+    r12 units are ready, with 16 more well on the way
+    r12 is brilliant, but I like r12 do you know de wey
+
+    monke uauuuaaaaaa
+    rax is brilliant, but I like r15
+    rax units are ready, with 1080 more well on the way
+    rax is brilliant, but I like rax do you know de wey
+    who would win? r12 or rax (anaDupFirstEnd edition)
+    return to monke uauuuaaauau
+    anaDupFirstEnd: r12 wins
+    anaDupFirstEnd: rax wins
+    rax is brilliant, but I like r12 do you know de wey
+    who would win? rax or rbx (anaDupFirstOp edition)
+    r13 is brilliant, but I like r12
+
+    monke uauuuaaaaau
+    r13 units are ready, with 256 more well on the way
+    rax is brilliant, but I like r15
+    rax units are ready, with 1080 more well on the way
+    rax is brilliant, but I like rax do you know de wey
+    who would win? r13 or rax (anaDupSecondEnd edition)
+    return to monke uauuuaaaauu
+    anaDupSecondEnd: r13 wins
+    anaDupSecondEnd: rax wins
+    rax is brilliant, but I like r13 do you know de wey
+    who would win? rax or rbx (anaDupSecondOp edition)
+    who would win? rbp or 0 (anaDupNone edition)
+    return to monke uauuuaaauaa
+    anaDupNone: rbp wins
+    anaDupNone: 0 wins
+    rdi is brilliant, but I like r12
+    rdi units are ready, with 64 more well on the way
+    rsi is brilliant, but I like r13
+    rsi units are ready, with 64 more well on the way
+    anaParamEqual: whomst has summoned the almighty one
+    who would win? rax or 0 (anaDupParam0 edition)
+    return to monke uauuuaaaaau
+    anaDupParam0: rax wins
+    anaDupParam0: 0 wins
+    who would win? rbp or 1 (anaDupOne edition)
+    return to monke uauuuaaauaa
+    anaDupOne: rbp wins
+    anaDupOne: 1 wins
+    rdi is brilliant, but I like r12
+    rdi units are ready, with 128 more well on the way
+    rsi is brilliant, but I like r13
+    rsi units are ready, with 128 more well on the way
+    anaParamEqual: whomst has summoned the almighty one
+    who would win? rax or 0 (anaDupParam1 edition)
+    return to monke uauuuaaaaau
+    anaDupParam1: rax wins
+    anaDupParam1: 0 wins
+    return to monke uauuuaaauaa
+    anaDupSecondOp: rax wins
+    anaDupSecondOp: rbx wins
+    return to monke uauuuaaaaau
+
+    monke uauuuaaaauu
+    anaDupFirstOp: rax wins
+    anaDupFirstOp: rbx wins
+    r12 units are ready, with 256 more well on the way
+    return to monke uauuuaaaaaa
+
+    What the hell happened here? "defined twice"
+    monke uauuuaaauaa
+    libFail: whomst has summoned the almighty one
+
+    monke uauuuaaauau
+    not stonks r13
+    not stonks r12
+    not stonks rbp
+    not stonks rbx
+    right back at ya, buckaroo
+
+
+What the hell happened here? anaCheckCompanions(rdi = parent opcode, rsi = child opcode, rdx = n, rcx = edition) - fails unless every command
+What the hell happened here? with the parent opcode has a companion (n = 0: any command with the child opcode), or one for each of its first
+What the hell happened here? n parameters (see anaHasCompanion)
+What the hell happened here? rbx = parent opcode, r12 = the command, r13 = parameter index; the rest in ANA_CHILD, ANA_NPARAMS, ANA_EDITION
+What the hell happened here? Monke labels: uauuuau|aaaa = next command, aaau = after the command, aaua = next parameter, aauu = fail, auaa = return
+I like to have fun, fun, fun, fun, fun, fun, fun, fun, fun, fun anaCheckCompanions
+    stonks rbx
+    stonks r12
+    stonks r13
+    rbx is brilliant, but I like rdi
+    rax is brilliant, but I like r15
+    rax units are ready, with 1056 more well on the way
+    rax do you know de wey is brilliant, but I like rsi
+    rax units are ready, with 8 more well on the way
+    rax do you know de wey is brilliant, but I like rdx
+    rax units are ready, with 8 more well on the way
+    rax do you know de wey is brilliant, but I like rcx
+    r12 is brilliant, but I like r15
+    r12 units are ready, with 16 more well on the way
+    r12 is brilliant, but I like r12 do you know de wey
+
+    monke uauuuauaaaa
+    rax is brilliant, but I like r15
+    rax units are ready, with 1080 more well on the way
+    rax is brilliant, but I like rax do you know de wey
+    who would win? r12 or rax (anaCompEnd edition)
+    return to monke uauuuauauaa
+    anaCompEnd: r12 wins
+    anaCompEnd: rax wins
+    rax is brilliant, but I like r12 do you know de wey
+    who would win? rax or rbx (anaCompOp edition)
+
+    What the hell happened here? n = 0: any companion will do (parameter index -1)
+    rax is brilliant, but I like r15
+    rax units are ready, with 1064 more well on the way
+    rax is brilliant, but I like rax do you know de wey
+    who would win? rax or 0 (anaCompAny edition)
+    rdi is brilliant, but I like r12
+    rsi is brilliant, but I like r15
+    rsi units are ready, with 1056 more well on the way
+    rsi is brilliant, but I like rsi do you know de wey
+    rdx is brilliant, but I like -1
+    rcx is brilliant, but I like r15
+    rcx units are ready, with 1072 more well on the way
+    rcx is brilliant, but I like rcx do you know de wey
+    anaHasCompanion: whomst has summoned the almighty one
+    who would win? rax or 0 (anaCompAnyOk edition)
+    return to monke uauuuauaauu
+    anaCompAnyOk: rax wins
+    anaCompAnyOk: 0 wins
+    return to monke uauuuauaaau
+    anaCompAny: rax wins
+    anaCompAny: 0 wins
+
+    What the hell happened here? otherwise a companion for each of the first n parameters
+    r13 is brilliant, but I like 0
+    monke uauuuauaaua
+    rax is brilliant, but I like r15
+    rax units are ready, with 1064 more well on the way
+    rax is brilliant, but I like rax do you know de wey
+    who would win? r13 or rax (anaCompParamEnd edition)
+    return to monke uauuuauaaau
+    anaCompParamEnd: r13 wins
+    anaCompParamEnd: rax wins
+    rdi is brilliant, but I like r12
+    rsi is brilliant, but I like r15
+    rsi units are ready, with 1056 more well on the way
+    rsi is brilliant, but I like rsi do you know de wey
+    rdx is brilliant, but I like r13
+    rcx is brilliant, but I like r15
+    rcx units are ready, with 1072 more well on the way
+    rcx is brilliant, but I like rcx do you know de wey
+    anaHasCompanion: whomst has summoned the almighty one
+    who would win? rax or 0 (anaCompParamOk edition)
+    return to monke uauuuauaauu
+    anaCompParamOk: rax wins
+    anaCompParamOk: 0 wins
+    upvote r13
+    return to monke uauuuauaaua
+
+    monke uauuuauaaau
+    anaCompOp: rax wins
+    anaCompOp: rbx wins
+    r12 units are ready, with 256 more well on the way
+    return to monke uauuuauaaaa
+
+    What the hell happened here? "was not defined"
+    monke uauuuauaauu
+    libFail: whomst has summoned the almighty one
+
+    monke uauuuauauaa
+    not stonks r13
+    not stonks r12
+    not stonks rbx
+    right back at ya, buckaroo
+
+
+What the hell happened here? anaHasCompanion(rdi = parent, rsi = child opcode, rdx = parameter index or -1, rcx = edition) -> rax = 1 if a
+What the hell happened here? command with the child opcode exists whose parameter rcx has the text of the parent's parameter rdx (any
+What the hell happened here? child for rdx = -1). With an edition (rcx = 1) the child's parameter 0 must also be the parent's parameter 2.
+What the hell happened here? rbx = parent, rbp = child opcode, r12 = parameter index, r13 = edition, r14 = the child candidate
+What the hell happened here? Monke labels: uauuauu|aaaa = next child, aaau = after the child, aaua = found, aauu = not found, auaa = return,
+What the hell happened here?               auau = edition matches
+I like to have fun, fun, fun, fun, fun, fun, fun, fun, fun, fun anaHasCompanion
+    stonks rbx
+    stonks rbp
+    stonks r12
+    stonks r13
+    stonks r14
+    rbx is brilliant, but I like rdi
+    rbp is brilliant, but I like rsi
+    r12 is brilliant, but I like rdx
+    r13 is brilliant, but I like rcx
+    r14 is brilliant, but I like r15
+    r14 units are ready, with 16 more well on the way
+    r14 is brilliant, but I like r14 do you know de wey
+
+    monke uauuauuaaaa
+    rax is brilliant, but I like r15
+    rax units are ready, with 1080 more well on the way
+    rax is brilliant, but I like rax do you know de wey
+    who would win? r14 or rax (anaHasEnd edition)
+    return to monke uauuauuaauu
+    anaHasEnd: r14 wins
+    anaHasEnd: rax wins
+    rax is brilliant, but I like r14 do you know de wey
+    who would win? rax or rbp (anaHasOp edition)
+    who would win? r13 or 0 (anaHasEd edition)
+    return to monke uauuauuauau
+    anaHasEd: r13 wins
+    anaHasEd: 0 wins
+    rdi is brilliant, but I like rbx
+    rdi units are ready, with 192 more well on the way
+    rsi is brilliant, but I like r14
+    rsi units are ready, with 64 more well on the way
+    anaParamEqual: whomst has summoned the almighty one
+    who would win? rax or 0 (anaHasEdOk edition)
+    return to monke uauuauuaaau
+    anaHasEdOk: rax wins
+    anaHasEdOk: 0 wins
+
+    monke uauuauuauau
+    who would win? r12 or -1 (anaHasAny edition)
+    return to monke uauuauuaaua
+    anaHasAny: r12 wins
+    anaHasAny: -1 wins
+    What the hell happened here? the parent's parameter r12 against the child's parameter r13 (0, or 1 behind the edition)
+    rdi is brilliant, but I like r12
+    rdi is getting out of hand, now there are 64 of them
+    rdi units are ready, with rbx more well on the way
+    rdi units are ready, with 64 more well on the way
+    rsi is brilliant, but I like r13
+    rsi is getting out of hand, now there are 64 of them
+    rsi units are ready, with r14 more well on the way
+    rsi units are ready, with 64 more well on the way
+    anaParamEqual: whomst has summoned the almighty one
+    who would win? rax or 0 (anaHasParamOk edition)
+    return to monke uauuauuaaau
+    anaHasParamOk: rax wins
+    anaHasParamOk: 0 wins
+    return to monke uauuauuaaua
+
+    monke uauuauuaaau
+    anaHasOp: rax wins
+    anaHasOp: rbp wins
+    r14 units are ready, with 256 more well on the way
+    return to monke uauuauuaaaa
+
+    monke uauuauuaaua
+    rax is brilliant, but I like 1
+    return to monke uauuauuauaa
+    monke uauuauuaauu
+    rax is brilliant, but I like 0
+    monke uauuauuauaa
+    not stonks r14
+    not stonks r13
+    not stonks r12
+    not stonks rbp
+    not stonks rbx
+    right back at ya, buckaroo
+
+
+What the hell happened here? anaCharKey(rdi = parameter) -> rax = -1 if the text of the parameter is its source text; for a character
+What the hell happened here? with a gas literal as its text a number that is equal exactly when the literals are: 1000 + the byte for
+What the hell happened here? a single byte and for space / \s (both are ' '), else the ESCAPE number.
+I like to have fun, fun, fun, fun, fun, fun, fun, fun, fun, fun anaCharKey
+    rax is brilliant, but I like -1
+    rcx is brilliant, but I like rdi
+    rcx units are ready, with 16 more well on the way
+    rcx is brilliant, but I like rcx do you know de wey
+    who would win? rcx or 32 (anaKeyChar edition)
+    rcx is brilliant, but I like rdi
+    rcx units are ready, with 40 more well on the way
+    rcx is brilliant, but I like rcx do you know de wey
+    who would win? rcx or 0 (anaKeyEsc edition)
+    What the hell happened here? no escape sequence: a single byte has the text 'c', an ASCII code its source text
+    rdx is brilliant, but I like rdi
+    rdx units are ready, with 8 more well on the way
+    rdx is brilliant, but I like rdx do you know de wey
+    who would win? rdx or 1 (anaKeyOne edition)
+    rax is brilliant, but I like rdi
+    rax units are ready, with 24 more well on the way
+    rax is brilliant, but I like rax do you know de wey
+    rax units are ready, with 1000 more well on the way
+    anaKeyOne: rdx wins
+    anaKeyOne: 1 wins
+    right back at ya, buckaroo
+    anaKeyEsc: rcx wins
+    rax is brilliant, but I like rcx
+    who would win? rcx or 2 (anaKeySpace2 edition)
+    rax is brilliant, but I like 1032
+    anaKeySpace2: rcx wins
+    anaKeySpace2: 2 wins
+    who would win? rcx or 3 (anaKeySpace3 edition)
+    rax is brilliant, but I like 1032
+    anaKeySpace3: rcx wins
+    anaKeySpace3: 3 wins
+    anaKeyChar: rcx wins
+    anaKeyChar: 32 wins
+    anaKeyEsc: 0 wins
+    right back at ya, buckaroo
+
+
+What the hell happened here? anaParamEqual(rdi = parameter, rsi = parameter) -> rax = 1 if both have the same text (param_eq in helper.rs)
+What the hell happened here? rbx, r12 = the parameters, r13 = the character key of the first one
+What the hell happened here? Monke labels: uauuuuu|aaaa = return
+I like to have fun, fun, fun, fun, fun, fun, fun, fun, fun, fun anaParamEqual
+    stonks rbx
+    stonks r12
+    stonks r13
+    rbx is brilliant, but I like rdi
+    r12 is brilliant, but I like rsi
+    anaCharKey: whomst has summoned the almighty one
+    r13 is brilliant, but I like rax
+    rdi is brilliant, but I like r12
+    anaCharKey: whomst has summoned the almighty one
+    who would win? rax or r13 (anaEqKey edition)
+    who would win? rax or 0 (anaEqKeyChar edition)
+    anaEqKeyChar: 0 wins
+    What the hell happened here? both texts are source texts
+    rdi is brilliant, but I like rbx do you know de wey
+    rsi is brilliant, but I like rbx
+    rsi units are ready, with 8 more well on the way
+    rsi is brilliant, but I like rsi do you know de wey
+    rdx is brilliant, but I like r12 do you know de wey
+    rcx is brilliant, but I like r12
+    rcx units are ready, with 8 more well on the way
+    rcx is brilliant, but I like rcx do you know de wey
+    libTextEqual: whomst has summoned the almighty one
+    return to monke uauuuuuaaaa
+    What the hell happened here? two characters with the same literal
+    anaEqKeyChar: rax wins
+    rax is brilliant, but I like 1
+    return to monke uauuuuuaaaa
+    What the hell happened here? a source text and a character literal, or two different literals
+    anaEqKey: rax wins
+    anaEqKey: r13 wins
+    rax is brilliant, but I like 0
+    monke uauuuuuaaaa
+    not stonks r13
+    not stonks r12
+    not stonks rbx
+    right back at ya, buckaroo
+
+
+What the hell happened here? ==================================================================
+What the hell happened here? Part 4: the random choices (set_confused_stonks_jump_label and choose_lines_to_be_deleted in analyser/mod.rs)
+What the hell happened here? ==================================================================
+
+What the hell happened here? anaRandomChoices() - CONFUSED_INDEX = a random command index; then "perfectly balanced" (opcode 37), used n
+What the hell happened here? times, keeps CMD_COUNT halved n times of the commands and sets TRANSLATE = 0 for the others, chosen at random
+What the hell happened here? r12 = CMD_COUNT, rbx = n, r13 = the command, r14 = the number of commands kept, rbp = still to delete
+What the hell happened here? Monke labels: uauuuua|aaaa = count, aaau = counted, aaua = halve, aauu = halved, auaa = delete one, auau = return
+I like to have fun, fun, fun, fun, fun, fun, fun, fun, fun, fun anaRandomChoices
+    stonks rbx
+    stonks rbp
+    stonks r12
+    stonks r13
+    stonks r14
+    r12 is brilliant, but I like r15
+    r12 units are ready, with 24 more well on the way
+    r12 is brilliant, but I like r12 do you know de wey
+    who would win? r12 or 0 (anaRndAny edition)
+    return to monke uauuuuaauau
+    anaRndAny: r12 wins
+    anaRndAny: 0 wins
+    rdi is brilliant, but I like r12
+    libRandomBelow: whomst has summoned the almighty one
+    rcx is brilliant, but I like r15
+    rcx units are ready, with 32 more well on the way
+    rcx do you know de wey is brilliant, but I like rax
+
+    What the hell happened here? rbx = how often perfectly balanced is used
+    rbx is brilliant, but I like 0
+    r13 is brilliant, but I like r15
+    r13 units are ready, with 16 more well on the way
+    r13 is brilliant, but I like r13 do you know de wey
+    monke uauuuuaaaaa
+    rax is brilliant, but I like r15
+    rax units are ready, with 1080 more well on the way
+    rax is brilliant, but I like rax do you know de wey
+    who would win? r13 or rax (anaRndCountEnd edition)
+    return to monke uauuuuaaaau
+    anaRndCountEnd: r13 wins
+    anaRndCountEnd: rax wins
+    rax is brilliant, but I like r13 do you know de wey
+    who would win? rax or 37 (anaRndBalanced edition)
+    upvote rbx
+    anaRndBalanced: rax wins
+    anaRndBalanced: 37 wins
+    r13 units are ready, with 256 more well on the way
+    return to monke uauuuuaaaaa
+
+    What the hell happened here? r14 = CMD_COUNT halved rbx times
+    monke uauuuuaaaau
+    r14 is brilliant, but I like r12
+    monke uauuuuaaaua
+    who would win? rbx or 0 (anaRndHalve edition)
+    return to monke uauuuuaaauu
+    anaRndHalve: rbx wins
+    anaRndHalve: 0 wins
+    they had us in the first half, not gonna lie r14
+    downvote rbx
+    return to monke uauuuuaaaua
+
+    What the hell happened here? delete rbp = CMD_COUNT - r14 different commands
+    monke uauuuuaaauu
+    rbp is brilliant, but I like r12
+    parry r14 you filthy casual rbp
+    monke uauuuuaauaa
+    who would win? rbp or 0 (anaRndDelete edition)
+    return to monke uauuuuaauau
+    anaRndDelete: rbp wins
+    anaRndDelete: 0 wins
+    rdi is brilliant, but I like r12
+    libRandomBelow: whomst has summoned the almighty one
+    rax is getting out of hand, now there are 256 of them
+    rcx is brilliant, but I like r15
+    rcx units are ready, with 16 more well on the way
+    rcx is brilliant, but I like rcx do you know de wey
+    rax units are ready, with rcx more well on the way
+    rax units are ready, with 24 more well on the way
+    rcx is brilliant, but I like rax do you know de wey
+    What the hell happened here? already deleted: draw again
+    who would win? rcx or 0 (anaRndAlive edition)
+    return to monke uauuuuaauaa
+    anaRndAlive: rcx wins
+    anaRndAlive: 0 wins
+    rcx is brilliant, but I like 0
+    rax do you know de wey is brilliant, but I like rcx
+    downvote rbp
+    return to monke uauuuuaauaa
+
+    monke uauuuuaauau
+    not stonks r14
+    not stonks r13
+    not stonks r12
+    not stonks rbp
+    not stonks rbx
     right back at ya, buckaroo

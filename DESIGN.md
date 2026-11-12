@@ -82,8 +82,9 @@ compiler. So the compiler source only uses jump markers that are unique across *
   `they're the same picture`, `confused stonks`, `perfectly balanced as all things should be`,
   `or draw 25`.
 * Characters in `what can I say except` / immediates: write **letters** as themselves, everything
-  else as its decimal ASCII code (`48` for `0`, `44` for `,`) or as `\n`, `\s`, `\t`. A digit
-  written as itself is a decimal number: `what can I say except 0` prints a NUL byte!
+  else as its decimal ASCII code (`48` for `0`, `44` for `,`) or as `\n`, `\s`, `\t`. A single
+  digit is a character only where decimals are not allowed (`what can I say except 0` prints `'0'`,
+  but `al is brilliant, but I like 0` loads 0), so the codes keep the source unambiguous.
 
 ## MemeAssembly cheat sheet (and its traps)
 
