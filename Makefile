@@ -1,6 +1,6 @@
 # The build itself is the Breakfile: `memeasm -o memeasm-self` without input files compiles the
 # files listed there. This Makefile only wraps it and the tests.
-REF_MEMEASM ?= /tmp/claude-501/-home-janezrotman-guest-work-MemeAssembly/8b9b7f13-f8fa-429d-86c2-5ec5be99085e/scratchpad/ref-memeasm
+REF_MEMEASM ?= memeasm
 X86_CC ?= x86_64-linux-gnu-gcc
 SOURCES := $(shell sed 's/^the secret ingredient is //' Breakfile)
 

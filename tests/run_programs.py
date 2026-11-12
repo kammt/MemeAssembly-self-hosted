@@ -8,7 +8,7 @@ For every program in PROGRAMS (a runnable case of tests/cases):
 then both executables run (x86_64 binaries run directly through qemu binfmt) with the same
 arguments and stdin, and their stdout and exit status must be identical.
 
-Environment: REF_MEMEASM (reference), SELF_MEMEASM (default ./memeasm-self), X86_CC (default
+Environment: REF_MEMEASM (reference, default memeasm from PATH), SELF_MEMEASM (default ./memeasm-self), X86_CC (default
 x86_64-linux-gnu-gcc), PROGRAMS_OUT (work directory, default $TEST_OUT/programs, TEST_OUT
 defaulting to tests/out).
 
@@ -27,10 +27,7 @@ CASES = os.path.join(ROOT, "tests", "cases")
 OUT = os.environ.get(
     "PROGRAMS_OUT", os.path.join(os.environ.get("TEST_OUT", os.path.join(ROOT, "tests", "out")), "programs")
 )
-REF = os.environ.get(
-    "REF_MEMEASM",
-    "/tmp/claude-501/-home-janezrotman-guest-work-MemeAssembly/8b9b7f13-f8fa-429d-86c2-5ec5be99085e/scratchpad/ref-memeasm",
-)
+REF = os.environ.get("REF_MEMEASM", "memeasm")
 SELF = os.environ.get("SELF_MEMEASM", os.path.join(ROOT, "memeasm-self"))
 X86_CC = os.environ.get("X86_CC", "x86_64-linux-gnu-gcc")
 TIMEOUT = 20

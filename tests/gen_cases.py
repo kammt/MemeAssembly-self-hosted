@@ -2,6 +2,9 @@
 """Generates tests/cases/{ok,err}_*.memeasm of the self-hosted MemeAssembly compiler.
 
 Usage: tests/gen_cases.py tests/cases   (overwrites the generated cases; edit this file, not the cases)
+
+Environment: MEMEASM_EXAMPLES (the reference repository's examples directory, default ../MemeAssembly/examples
+next to this repository).
 """
 import os
 import sys
@@ -1147,8 +1150,14 @@ case("ok_prog_memory_string", lines(*fn("main", [
 ], WIN)))
 
 # ---------------------------------------------------------------------------------------------
-# examples of the reference repository
-EXAMPLES = "/home/janezrotman.guest/work/MemeAssembly/examples"
+# examples of the reference repository: $MEMEASM_EXAMPLES, by default the examples directory of a
+# MemeAssembly checkout next to this repository (../MemeAssembly/examples)
+EXAMPLES = os.environ.get(
+    "MEMEASM_EXAMPLES",
+    os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "MemeAssembly", "examples"),
+)
+if not os.path.isdir(EXAMPLES):
+    sys.exit(f"gen_cases.py: no MemeAssembly examples in {EXAMPLES}; set MEMEASM_EXAMPLES to the reference's examples directory")
 for src, name in [
     ("HelloWorld.memeasm", "HelloWorld"), ("alphabet.memeasm", "alphabet"), ("brainfuck.memeasm", "brainfuck"),
     ("free-real-estate.memeasm", "free_real_estate"), ("is_nice.memeasm", "is_nice"),

@@ -63,6 +63,10 @@ Restraint is a virtue. Compared to the reference compiler:
 * **Assembly output only**, as with `memeasm -S`. Linking is gcc's problem. Consequently there is no check for a `main` function
   or for called functions existing either, again exactly like `memeasm -S`.
 * **Martyrdom is always on.** You don't get to turn it off. Nobody asked you.
+* **Programs larger than 16,711,680 bytes (16 MiB minus 64 KiB) are rejected** with the usual `Compilation error`.
+  The input buffer is allocated once, at a size we consider generous, and it is not going to grow for you.
+  The reference compiles larger files without complaint, so yes, this is the one place we know of where we are not byte for byte the same.
+  If your MemeAssembly program is over 16 megabytes, the compiler is not your biggest problem.
 
 Every command is supported, though. All of them. Even `perfectly balanced as all things should be`, which deletes random lines of your program,
 and `confused stonks`, which jumps to a random one. Both are random, which is the only reason the tests don't compare them byte for byte.
@@ -70,10 +74,11 @@ and `confused stonks`, which jumps to a random one. Both are random, which is th
 ## Getting started
 ### Building
 The compiler is a multi-file MemeAssembly project listed in the `Breakfile`. The very first copy has to be built by the
-reference `memeasm` (v2.0, the Rust rewrite). We are not proud of it either.
+reference `memeasm` (v2.0, the Rust rewrite). We are not proud of it either. By default it is whatever `memeasm` is on your `PATH`.
 
 ```sh
-make memeasm-self REF_MEMEASM=/path/to/memeasm   # runs `memeasm -o memeasm-self`, which reads the Breakfile
+make memeasm-self                                # runs `memeasm -o memeasm-self`, which reads the Breakfile
+make memeasm-self REF_MEMEASM=/path/to/memeasm   # if your reference lives somewhere less respectable
 ```
 
 ### Usage
@@ -99,8 +104,9 @@ Because "it compiles, ship it" was deemed insufficiently rigorous:
   * Perfectly-balanced cases only need to assemble, since Thanos doesn't take requests.
 * `tests/run_programs.py`: assembles and runs 27 programs, built by both compilers, and compares their stdout and exit status.
 * `tests/gen_cases.py tests/cases`: regenerates the corpus. Edit cases there, not by hand.
+  It copies the reference's examples from `MEMEASM_EXAMPLES` (default: `../MemeAssembly/examples`, next to this repository).
 
-Environment: `REF_MEMEASM` (reference compiler), `SELF_MEMEASM` (default `./memeasm-self`),
+Environment: `REF_MEMEASM` (reference compiler, default `memeasm` from `PATH`), `SELF_MEMEASM` (default `./memeasm-self`),
 `TEST_OUT`, `X86_CC` (default `x86_64-linux-gnu-gcc`).
 
 ## Layout

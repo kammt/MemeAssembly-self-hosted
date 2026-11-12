@@ -10,7 +10,7 @@ comparing (its position is random), but both must contain it or neither. Cases u
 `perfectly balanced as all things should be` delete random commands, so for them the output
 is only checked to assemble with gas.
 
-Environment: REF_MEMEASM (reference), SELF_MEMEASM (default ./memeasm-self), TEST_OUT (default tests/out).
+Environment: REF_MEMEASM (reference, default memeasm from PATH), SELF_MEMEASM (default ./memeasm-self), TEST_OUT (default tests/out).
 
 Usage: tests/run_tests.py [-v] [-k] [name-substring ...]
   -v  show the diff of every failing case
@@ -25,10 +25,7 @@ from concurrent.futures import ThreadPoolExecutor
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CASES = os.path.join(ROOT, "tests", "cases")
 OUT = os.environ.get("TEST_OUT", os.path.join(ROOT, "tests", "out"))
-REF = os.environ.get(
-    "REF_MEMEASM",
-    "/tmp/claude-501/-home-janezrotman-guest-work-MemeAssembly/8b9b7f13-f8fa-429d-86c2-5ec5be99085e/scratchpad/ref-memeasm",
-)
+REF = os.environ.get("REF_MEMEASM", "memeasm")
 SELF = os.environ.get("SELF_MEMEASM", os.path.join(ROOT, "memeasm-self"))
 X86_CC = os.environ.get("X86_CC", "x86_64-linux-gnu-gcc")
 CONFUSED = re.compile(rb"^\t\.LConfusedStonks_0:\n", re.M)

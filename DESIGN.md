@@ -15,7 +15,7 @@ output is written.
 
 ## The reference
 
-The reference compiler is the Rust implementation in `/home/janezrotman.guest/work/MemeAssembly`
+The reference compiler is the Rust implementation of MemeAssembly v2.0 (https://github.com/kammt/MemeAssembly)
 (read it, **never modify it**). It is the specification; when this document and the Rust code
 disagree, the Rust code wins. The relevant files:
 
@@ -35,9 +35,12 @@ executables and object files. We only produce the `-S` text (output mode "assemb
 **no** "main function must exist" check and **no** "called function must be defined" check
 (the reference only does those for executables).
 
-A built reference binary: `/tmp/claude-501/-home-janezrotman-guest-work-MemeAssembly/8b9b7f13-f8fa-429d-86c2-5ec5be99085e/scratchpad/ref-memeasm`
-(set `REF_MEMEASM` to override). Command documentation (incomplete, e.g. `it's free real estate`
-and editions are missing): `git -C /home/janezrotman.guest/work/MemeAssembly show origin/gh-pages:commands/<file>.md`.
+The reference binary is `memeasm` from `PATH` (set `REF_MEMEASM` to override). Command documentation
+(incomplete, e.g. `it's free real estate` and editions are missing): the `commands/` directory of the
+`gh-pages` branch of https://github.com/kammt/MemeAssembly.
+
+The input is limited to 16,711,680 bytes (16 MiB − 64 KiB): `libReadInput` allocates a fixed 16 MiB
+buffer and calls `libFail` once more than that has been read. The reference has no such limit.
 
 ## Building and testing
 
